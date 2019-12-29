@@ -123,6 +123,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\olcPGEX_Sound.h" />
     <ClInclude Include="src\patherns.h" />
     <ClInclude Include="src\olcPixelGameEngine.h" />
     <ClInclude Include="src\structs.h" />
@@ -131,7 +132,10 @@
     <ClCompile Include="src\SHMUP! Witch.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="art\2dPixWitch.png" />
+    <Image Include="art\health1.png" />
+    <Image Include="art\health2.png" />
+    <Image Include="art\mountains.png" />
+    <Image Include="art\Player1.png" />
     <Image Include="art\bad_witch.png" />
     <Image Include="art\bat.png" />
     <Image Include="art\bat2.png" />
@@ -144,9 +148,13 @@
     <Image Include="art\ghost.png" />
     <Image Include="art\moon.png" />
     <Image Include="art\mountains2.png" />
+    <Image Include="art\player2.png" />
+    <Image Include="art\player2bullet.png" />
     <Image Include="art\pumpkin.png" />
     <Image Include="art\shield.png" />
     <Image Include="art\sky.png" />
+    <Image Include="art\sky1.png" />
+    <Image Include="art\sky2.png" />
     <Image Include="art\start.png" />
     <Image Include="art\tree.png" />
   </ItemGroup>

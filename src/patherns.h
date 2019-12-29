@@ -11,32 +11,32 @@ This file contain move and shot patherns
 
 
 // Movement patterns
-auto Move_None = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, Player& p)
+auto Move_None = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, olc::vf2d p)
 {
 	e.pos.x -= fScrollSpeed * fElapseTime;
 };
 
-auto Move_Fast = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, Player& p)
+auto Move_Fast = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, olc::vf2d p)
 {
 	e.pos.x -= fScrollSpeed * fElapseTime * 5.0f;
 };
 
-auto Move_Sinusoidal = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, Player& p)
+auto Move_Sinusoidal = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, olc::vf2d p)
 {
 	e.pos.x -= fScrollSpeed * fElapseTime * 1.5f;
 	e.dataMove[0] += fElapseTime * 1.5f;
 	e.pos.y += 30.f * cosf(e.dataMove[0]) * 3 * fElapseTime;
 };
 
-auto Move_Sinusoidal_Fast = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, Player& p)
+auto Move_Sinusoidal_Fast = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, olc::vf2d p)
 {
 	e.pos.x -= fScrollSpeed * fElapseTime * 5.5f;
 	e.dataMove[0] += fElapseTime * 2.5f;
-	if (e.pos.y > p.pos.y) e.pos.y -= 120 * fElapseTime;
-	if (e.pos.y < p.pos.y) e.pos.y += 120 * fElapseTime;
+	if (e.pos.y > p.y) e.pos.y -= 120 * fElapseTime;
+	if (e.pos.y < p.y) e.pos.y += 120 * fElapseTime;
 };
 
-auto Move_Bat = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, Player& p)
+auto Move_Bat = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, olc::vf2d p)
 {
 	e.pos.x -= fScrollSpeed * fElapseTime * 1.5f;
 	float fRotationSpeed = 1.5f;
@@ -49,11 +49,11 @@ auto Move_Bat = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, Player& p)
 };
 
 // Fire Patterns
-auto Fire_None = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list<sBullet>& bullets, Player& p)
+auto Fire_None = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list<sBullet>& bullets, olc::vf2d p)
 {
 };
 
-auto Fire_Straight = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list<sBullet>& bullets, Player& p)
+auto Fire_Straight = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list<sBullet>& bullets, olc::vf2d p)
 {
 	constexpr float fDelay = 0.8f;
 	e.dataFire[0] += fElapseTime;
@@ -63,12 +63,12 @@ auto Fire_Straight = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::
 		sBullet b;
 		b.nBulletTypeID = e.def.nBulletTypeID;
 		b.pos = e.pos + olc::vf2d(-(float)sprEnemy[e.def.nSpriteID]->width / 2, ((float)sprEnemy[e.def.nSpriteID]->height / 2) - ((float)sprEnemyBullet[b.nBulletTypeID]->height / 2));
-		b.vel = { -180.0f, (p.pos.y - e.pos.y) };
+		b.vel = {p - e.pos };
 		bullets.push_back(b);
 	}
 };
 
-auto Fire_Fast = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list<sBullet>& bullets, Player& p)
+auto Fire_Fast = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list<sBullet>& bullets, olc::vf2d p)
 {
 	constexpr float fDelay = 0.4f;
 	e.dataFire[0] += fElapseTime;
@@ -84,7 +84,7 @@ auto Fire_Fast = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list
 	}
 };
 
-auto Fire_Triple = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list<sBullet>& bullets, Player& p)
+auto Fire_Triple = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list<sBullet>& bullets, olc::vf2d p)
 {
 	constexpr float fDelay = 1.2f;
 	constexpr int nBullets = 3;
@@ -105,7 +105,7 @@ auto Fire_Triple = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::li
 	}
 };
 
-auto Fire_DeathWave = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list<sBullet>& bullets, Player& p)
+auto Fire_DeathWave = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list<sBullet>& bullets, olc::vf2d p)
 {
 	constexpr float fDelay = 0.1f;
 	e.dataFire[0] += fElapseTime;
@@ -122,7 +122,7 @@ auto Fire_DeathWave = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std:
 	}
 };
 
-auto Fire_Moon = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list<sBullet>& bullets, Player& p)
+auto Fire_Moon = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list<sBullet>& bullets, olc::vf2d p)
 {
 	constexpr float fDelay = 1.2f;
 	constexpr int nBullets = 15;

@@ -24,6 +24,9 @@
     <ClInclude Include="src\olcPixelGameEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\olcPGEX_Sound.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\SHMUP! Witch.cpp">
@@ -31,9 +34,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="art\2dPixWitch.png">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="art\moon.png">
       <Filter>Resource Files</Filter>
     </Image>
@@ -83,6 +83,30 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="art\start.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\player2.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\Player1.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\player2bullet.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\health1.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\health2.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\sky1.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\sky2.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\mountains.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
