@@ -109,6 +109,12 @@
     <Image Include="art\mountains.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="art\splash1.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\splash2.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Media Include="art\sounds\bg1.wav">
@@ -123,5 +129,27 @@
     <Media Include="art\sounds\spell2.wav">
       <Filter>Resource Files</Filter>
     </Media>
+    <Media Include="art\sounds\gloop.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+    <Media Include="art\sounds\loose.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+    <Media Include="art\sounds\ping.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+    <Media Include="art\sounds\shot.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+    <Media Include="art\sounds\theme.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+    <Media Include="art\sounds\witchsLaugh.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="irrKlang\changes.txt" />
+    <Text Include="irrKlang\readme.txt" />
   </ItemGroup>
 </Project>

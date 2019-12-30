@@ -1,4 +1,3 @@
-#pragma once
 /*
 	olcPGEX_Sound.h
 	+-------------------------------------------------------------+
@@ -63,7 +62,6 @@
 #include <istream>
 #include <cstring>
 #include <climits>
-#include "olcPixelGameEngine.h"
 
 #include <algorithm>
 #undef min

@@ -12,7 +12,9 @@ olc::Sprite* sprStart;
 olc::vf2d vSkyPos;
 olc::Sprite* sprEnemy[5];
 olc::Sprite* sprEnemyBullet[2];
+olc::Sprite* sprSplash[2];
 
+olc::vf2d vScreenSize;
 
 float fWorldSpeed = 90.0f;
 double dWorldPos = 0.0f;
@@ -34,6 +36,9 @@ public:
 	float fFireRate;
 	float fProtectionTimer;
 	float fCooldown;
+
+	float fAnimationFrame;
+
 	bool bIsProtected;
 	bool bCanFire;
 	bool bIsFire;
@@ -65,6 +70,12 @@ public:
 	~Player() = default;
 };
 
+struct sSplash
+{
+	olc::vf2d pos;
+	float fCounter;
+	uint32_t nID;
+};
 
 struct sBullet
 {
@@ -89,7 +100,6 @@ struct sEnemyDefinition
 	std::function<void(sEnemy&, float, float, std::list<sBullet>&, olc::vf2d)> funcFire;
 
 
-	uint32_t nBulletTypeID = 0;
 	int nScore = 0;
 };
 
