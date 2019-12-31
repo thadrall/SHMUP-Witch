@@ -115,6 +115,84 @@
     <Image Include="art\splash2.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="art\scroll.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\scroll2.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\player1atack.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\player2atack.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\animation\spell0.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\animation\spell1.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\animation\spell2.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\animation\lightning0.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\animation\lightning1.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\animation\lightning2.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\animation\lightning3.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\animation\lightning4.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\player1bullet.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\shield2.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\sky3.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\cauldron2.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\manaFrame.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\manaFrameSmall.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\manaP1.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\manaP2.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\manaP1d.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\manaP2d.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\boost1.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\boost2.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\wave1.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\wave2.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Media Include="art\sounds\bg1.wav">
@@ -147,9 +225,20 @@
     <Media Include="art\sounds\witchsLaugh.wav">
       <Filter>Resource Files</Filter>
     </Media>
+    <Media Include="art\sounds\electricShock.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+    <Media Include="art\sounds\powerup.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+    <Media Include="art\sounds\zap.mp3" />
+    <Media Include="art\sounds\slayer_south_of_heaven_8_bit.mp3" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="irrKlang\changes.txt" />
     <Text Include="irrKlang\readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="art\sounds\zapHit.ogg" />
   </ItemGroup>
 </Project>

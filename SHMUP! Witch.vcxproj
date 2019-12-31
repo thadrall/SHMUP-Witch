@@ -144,8 +144,25 @@
     <ClCompile Include="src\SHMUP! Witch.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="art\animation\lightning0.png" />
+    <Image Include="art\animation\lightning1.png" />
+    <Image Include="art\animation\lightning2.png" />
+    <Image Include="art\animation\lightning3.png" />
+    <Image Include="art\animation\lightning4.png" />
+    <Image Include="art\animation\spell0.png" />
+    <Image Include="art\animation\spell1.png" />
+    <Image Include="art\animation\spell2.png" />
+    <Image Include="art\boost1.png" />
+    <Image Include="art\boost2.png" />
+    <Image Include="art\cauldron2.png" />
     <Image Include="art\health1.png" />
     <Image Include="art\health2.png" />
+    <Image Include="art\manaFrame.png" />
+    <Image Include="art\manaFrameSmall.png" />
+    <Image Include="art\manaP1.png" />
+    <Image Include="art\manaP1d.png" />
+    <Image Include="art\manaP2.png" />
+    <Image Include="art\manaP2d.png" />
     <Image Include="art\mountains.png" />
     <Image Include="art\Player1.png" />
     <Image Include="art\bad_witch.png" />
@@ -160,33 +177,49 @@
     <Image Include="art\ghost.png" />
     <Image Include="art\moon.png" />
     <Image Include="art\mountains2.png" />
+    <Image Include="art\player1atack.png" />
+    <Image Include="art\player1bullet.png" />
     <Image Include="art\player2.png" />
+    <Image Include="art\player2atack.png" />
     <Image Include="art\player2bullet.png" />
     <Image Include="art\pumpkin.png" />
+    <Image Include="art\scroll.png" />
+    <Image Include="art\scroll2.png" />
     <Image Include="art\shield.png" />
+    <Image Include="art\shield2.png" />
     <Image Include="art\sky.png" />
     <Image Include="art\sky1.png" />
     <Image Include="art\sky2.png" />
+    <Image Include="art\sky3.png" />
     <Image Include="art\splash1.png" />
     <Image Include="art\splash2.png" />
     <Image Include="art\start.png" />
     <Image Include="art\tree.png" />
+    <Image Include="art\wave1.png" />
+    <Image Include="art\wave2.png" />
   </ItemGroup>
   <ItemGroup>
     <Media Include="art\sounds\bg1.wav" />
+    <Media Include="art\sounds\electricShock.wav" />
     <Media Include="art\sounds\explode.wav" />
     <Media Include="art\sounds\gloop.wav" />
     <Media Include="art\sounds\loose.wav" />
     <Media Include="art\sounds\ping.wav" />
+    <Media Include="art\sounds\powerup.wav" />
     <Media Include="art\sounds\shot.wav" />
+    <Media Include="art\sounds\slayer_south_of_heaven_8_bit.mp3" />
     <Media Include="art\sounds\spell.wav" />
     <Media Include="art\sounds\spell2.wav" />
     <Media Include="art\sounds\theme.wav" />
     <Media Include="art\sounds\witchsLaugh.wav" />
+    <Media Include="art\sounds\zap.mp3" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="irrKlang\changes.txt" />
     <Text Include="irrKlang\readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="art\sounds\zapHit.ogg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,7 +1,8 @@
 #pragma once
 
 olc::Sprite* sprPlayer[2];
-olc::Sprite* sprPlayerBullet[2];
+olc::Sprite* sprPlayerAtack[2];
+olc::Sprite* sprPlayerBullet[4];
 olc::Sprite* sprHealth[2];
 olc::Sprite* sprShield[2];
 olc::Sprite* sprTree;
@@ -9,11 +10,17 @@ olc::Sprite* sprSky[2];
 olc::Sprite* sprMountains[2];
 olc::Sprite* sprGameOver;
 olc::Sprite* sprStart;
-olc::vf2d vSkyPos;
 olc::Sprite* sprEnemy[5];
 olc::Sprite* sprEnemyBullet[2];
 olc::Sprite* sprSplash[2];
+olc::Sprite* sprPowerUps[2];
+olc::Sprite* sprTestAnimation[4];
+olc::Sprite* sprManaFrame[2];
+olc::Sprite* sprWave[2];
+olc::Sprite* sprBoost[2];
 
+
+olc::vf2d vSkyPos;
 olc::vf2d vScreenSize;
 
 float fWorldSpeed = 90.0f;
@@ -26,28 +33,61 @@ std::array<olc::vf2d, 2> aryMountains;
 
 
 struct sBullet;
+struct sSpell;
+struct sBoost;
+struct sEnemy;
 
 class Player {
 public:
 
+	//Player characteristics
 	olc::vf2d pos;
 	float fSpeed;
-	float fGunReloadTimer;
-	float fFireRate;
-	float fProtectionTimer;
-	float fCooldown;
-
-	float fAnimationFrame;
-
-	bool bIsProtected;
-	bool bCanFire;
-	bool bIsFire;
 	bool bDead;
 	int nLives;
 	int nScore;
 	uint32_t nPlayerID;
 
+	//Fire
+	float fGunReloadTimer;
+	float fFireRate;
+	bool bCanFire;
+	bool bIsFire;
 	std::list<sBullet> listPlayerBullet;
+
+	//SPECIAL
+	uint32_t nActiveSpecialID = 1;
+	bool bActiveSpecial;
+
+	//Shield
+	float fProtectionTimer;
+	float fCooldown; //<--???
+
+	bool bIsProtected;
+
+	//Mana
+	float fMana; 
+	float fMaxMana;
+	float fManaRegeneration;
+
+	//Spells
+
+	bool bSpeciall; //<-Fire (change Name)
+	float fSpeciallManaCost;
+	float fSpecialCooldown;
+	bool bSpeciallReady;
+	std::list<sSpell> listPlayerSpeciall;
+
+	//Boost
+	bool bBoost;
+	bool bBoostActive;
+	std::list<sBoost>listPlayerBoost;
+
+
+	//Animations counter
+	float fAnimationFrame;
+
+
 
 	Player(uint32_t ID)
 	{
@@ -55,6 +95,10 @@ public:
 		fSpeed = 200.0f;
 		fGunReloadTimer = 0.0f;
 		fCooldown = 2.5f;
+		fMana = 0.0f;
+		fMaxMana = 100.0f;
+		fManaRegeneration = 4;
+		fSpeciallManaCost = 20.0f;
 		fProtectionTimer = 0.0f;
 		fFireRate = 0.12f;
 		bIsFire = false;
@@ -64,10 +108,48 @@ public:
 		nScore = 0;
 		nPlayerID = ID;
 		listPlayerBullet.clear();
+		listPlayerSpeciall.clear();
+		listPlayerBoost.clear();
 		bDead = false;
 	}
 
 	~Player() = default;
+};
+struct sAnimation {
+
+	float fTimer = 0.0f;
+	std::list<olc::Sprite*> listFrame;
+	void loadSprites(olc::Sprite* sprite[], int nSprites) 
+	{
+		for (int i = 0; i < nSprites; i++)
+		{
+			listFrame.push_back(sprite[i]);
+		}
+	}
+	int nCurrentFrame = 0;
+
+	olc::Sprite* playAnimation(float fElapsedTime, float fFrameDuration = 0.3f)
+	{
+
+		
+		fTimer += fElapsedTime;
+		if (fTimer > fFrameDuration)
+		{
+			fTimer = 0.0f;
+			nCurrentFrame++;
+			if (nCurrentFrame >= listFrame.size()) nCurrentFrame = 0;
+		}
+		return* std::next(listFrame.begin(), nCurrentFrame);
+	}
+};
+
+struct sDrops
+{
+	olc::vf2d pos;
+	float fCounter = 0.0f;
+	float fFrameCounter = 0.0f;
+	uint32_t nID;
+	bool bRemove = false;
 };
 
 struct sSplash
@@ -81,25 +163,50 @@ struct sBullet
 {
 	olc::vf2d pos;
 	olc::vf2d vel;
-	bool remove = false;
+	bool bRemove = false;
 	uint32_t nBulletTypeID = 0;
-	uint32_t nBulletPlayerID = 0;
+	float fCounter;
 
 };
 
-struct sEnemy;
+struct sSpell
+{
+	olc::vf2d pos;
+	olc::vf2d vel;
+	bool bReady = false;
+	float fCounter = 0.0f;
+
+};
+
+struct sBoost
+{	
+	olc::vf2d offset;
+	uint32_t nBoostID;
+	float fDuration;
+	float fBonusValue;
+	float fBoostCounter = 0.0f;
+	float fCharge = 0.0f;
+	float fManaCost;
+	bool bReady;
+	bool bRemove = false;
+
+};
+
 
 struct sEnemyDefinition
 {
 	double dTriggerTime = 0.0f;
-	uint32_t nSpriteID = 0;
-	int nEnemyLives = 0;
 	float fOffset = 0.0f;
+
+	uint32_t nSpriteID = 0;
+	bool bBoos;
+	int nEnemyLives = 0;
+	
 
 	std::function<void(sEnemy&, float, float, olc::vf2d)> funcMove;
 	std::function<void(sEnemy&, float, float, std::list<sBullet>&, olc::vf2d)> funcFire;
 
-
+	int nDropRate;
 	int nScore = 0;
 };
 

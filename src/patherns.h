@@ -27,14 +27,14 @@ auto Move_Fast = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, olc::vf2d
 	e.pos.x -= fScrollSpeed * fElapseTime * 5.0f;
 };
 
-auto Move_Sinusoidal = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, olc::vf2d p)
+auto Move_Sin = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, olc::vf2d p)
 {
 	e.pos.x -= fScrollSpeed * fElapseTime * 1.5f;
 	e.dataMove[0] += fElapseTime * 1.5f;
 	e.pos.y += 30.f * cosf(e.dataMove[0]) * 3 * fElapseTime;
 };
 
-auto Move_Sinusoidal_Fast = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, olc::vf2d p)
+auto Move_Sin_Fast = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, olc::vf2d p)
 {
 	e.pos.x -= fScrollSpeed * fElapseTime * 5.5f;
 	e.dataMove[0] += fElapseTime * 2.5f;
