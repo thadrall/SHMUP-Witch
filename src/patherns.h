@@ -114,7 +114,7 @@ auto Fire_Triple = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::li
 
 auto Fire_Moon = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list<sBullet>& bullets, olc::vf2d p)
 {
-	constexpr float fDelay = 0.8f;
+	constexpr float fDelay = 1.1f;
 	constexpr int nBullets = 15;
 	constexpr float fTheta = 3.14159f * 2.0f / (float)nBullets;
 
@@ -129,7 +129,7 @@ auto Fire_Moon = [&](sEnemy& e, float fElapseTime, float fScrollSpeed, std::list
 			b.vel = { p - (e.pos + olc::vf2d(0 , ((float)sprEnemy[e.def.nSpriteID]->height / 2.0f))) };
 			bullets.push_back(b);
 	}
-	constexpr float fDelay2 = 1.2f;
+	constexpr float fDelay2 = 1.1f;
 	constexpr int nBullets2 = 6;
 	constexpr float fTheta2 = 2.0f * 3.14159f / (float)nBullets2;
 	e.dataFire[2] += fElapseTime;

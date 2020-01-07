@@ -193,6 +193,66 @@
     <Image Include="art\wave2.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="art\UI\Special0.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\Special1.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\Special2.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\Special3.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\Special4.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\Special4b.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\Special5.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\Special5b.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\boost3.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\boost3a.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\boost4.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\Special0b.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\Special1b.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\Special2b.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\Special3b.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\claw.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\speedBoost.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\speedBoostb.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\BosBar.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="art\UI\BosBarFrame.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Media Include="art\sounds\bg1.wav">
@@ -233,6 +293,15 @@
     </Media>
     <Media Include="art\sounds\zap.mp3" />
     <Media Include="art\sounds\slayer_south_of_heaven_8_bit.mp3" />
+    <Media Include="art\sounds\zap.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+    <Media Include="art\sounds\zapHit.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+    <Media Include="art\sounds\warp.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
   </ItemGroup>
   <ItemGroup>
     <Text Include="irrKlang\changes.txt" />
@@ -240,5 +309,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="art\sounds\zapHit.ogg" />
+    <None Include="ikpMP3.dll" />
+    <None Include="irrKlang.dll" />
   </ItemGroup>
 </Project>

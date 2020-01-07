@@ -77,6 +77,8 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>D:\dev\Repositories\SHMUP! Witch\irrKlang\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -91,6 +93,8 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>D:\dev\Repositories\SHMUP! Witch\irrKlang\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -107,6 +111,8 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>D:\dev\Repositories\SHMUP! Witch\irrKlang\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -125,6 +131,8 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>D:\dev\Repositories\SHMUP! Witch\irrKlang\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -154,7 +162,11 @@
     <Image Include="art\animation\spell2.png" />
     <Image Include="art\boost1.png" />
     <Image Include="art\boost2.png" />
+    <Image Include="art\boost3.png" />
+    <Image Include="art\boost3a.png" />
+    <Image Include="art\boost4.png" />
     <Image Include="art\cauldron2.png" />
+    <Image Include="art\claw.bmp" />
     <Image Include="art\health1.png" />
     <Image Include="art\health2.png" />
     <Image Include="art\manaFrame.png" />
@@ -195,6 +207,22 @@
     <Image Include="art\splash2.png" />
     <Image Include="art\start.png" />
     <Image Include="art\tree.png" />
+    <Image Include="art\UI\BosBar.png" />
+    <Image Include="art\UI\BosBarFrame.png" />
+    <Image Include="art\UI\Special0.png" />
+    <Image Include="art\UI\Special0b.png" />
+    <Image Include="art\UI\Special1.png" />
+    <Image Include="art\UI\Special1b.png" />
+    <Image Include="art\UI\Special2.png" />
+    <Image Include="art\UI\Special2b.png" />
+    <Image Include="art\UI\Special3.png" />
+    <Image Include="art\UI\Special3b.png" />
+    <Image Include="art\UI\Special4.png" />
+    <Image Include="art\UI\Special4b.png" />
+    <Image Include="art\UI\Special5.png" />
+    <Image Include="art\UI\Special5b.png" />
+    <Image Include="art\UI\speedBoost.png" />
+    <Image Include="art\UI\speedBoostb.png" />
     <Image Include="art\wave1.png" />
     <Image Include="art\wave2.png" />
   </ItemGroup>
@@ -211,8 +239,11 @@
     <Media Include="art\sounds\spell.wav" />
     <Media Include="art\sounds\spell2.wav" />
     <Media Include="art\sounds\theme.wav" />
+    <Media Include="art\sounds\warp.wav" />
     <Media Include="art\sounds\witchsLaugh.wav" />
     <Media Include="art\sounds\zap.mp3" />
+    <Media Include="art\sounds\zap.wav" />
+    <Media Include="art\sounds\zapHit.wav" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="irrKlang\changes.txt" />
@@ -220,6 +251,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="art\sounds\zapHit.ogg" />
+    <None Include="ikpMP3.dll" />
+    <None Include="irrKlang.dll" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

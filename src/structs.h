@@ -13,11 +13,15 @@ olc::Sprite* sprStart;
 olc::Sprite* sprEnemy[5];
 olc::Sprite* sprEnemyBullet[2];
 olc::Sprite* sprSplash[2];
-olc::Sprite* sprPowerUps[2];
+olc::Sprite* sprPowerUps[3];
 olc::Sprite* sprTestAnimation[4];
 olc::Sprite* sprManaFrame[2];
 olc::Sprite* sprWave[2];
-olc::Sprite* sprBoost[2];
+olc::Sprite* sprBoost[4];
+olc::Sprite* sprUISpecialA[6];
+olc::Sprite* sprUISpecialD[6];
+olc::Sprite* sprSpeedBoost[2];
+olc::Sprite* sprBossBar[2];
 
 
 olc::vf2d vSkyPos;
@@ -42,15 +46,25 @@ public:
 
 	//Player characteristics
 	olc::vf2d pos;
+	olc::vf2d vel;
 	float fSpeed;
 	bool bDead;
 	int nLives;
 	int nScore;
 	uint32_t nPlayerID;
 
+	//INPUT
+	olc::vf2d vInput;
+	float fInputSens;
+	bool bInput = false;
+	olc::vf2d vFinalVel;
+
+	
+
 	//Fire
 	float fGunReloadTimer;
 	float fFireRate;
+	float fBulletSpeed;
 	bool bCanFire;
 	bool bIsFire;
 	std::list<sBullet> listPlayerBullet;
@@ -72,15 +86,16 @@ public:
 
 	//Spells
 
-	bool bSpeciall; //<-Fire (change Name)
-	float fSpeciallManaCost;
+	bool bSpecial; 
+	float fSpecialManaCost;
 	float fSpecialCooldown;
-	bool bSpeciallReady;
-	std::list<sSpell> listPlayerSpeciall;
+	bool bSpecialReady;
+	std::list<sSpell> listPlayerSpell;
 
 	//Boost
 	bool bBoost;
 	bool bBoostActive;
+	float fBoostBuffor;
 	std::list<sBoost>listPlayerBoost;
 
 
@@ -92,15 +107,19 @@ public:
 	Player(uint32_t ID)
 	{
 		pos = { 200, 100 };
-		fSpeed = 200.0f;
+		vel = { 200, 100 };
+		vInput = { 200, 100 };
+		fSpeed = 220.0f;
+		fInputSens = 7;
 		fGunReloadTimer = 0.0f;
+		fBulletSpeed = 700;
 		fCooldown = 2.5f;
-		fMana = 0.0f;
+		fMana = 50.0f;
 		fMaxMana = 100.0f;
-		fManaRegeneration = 4;
-		fSpeciallManaCost = 20.0f;
+		fManaRegeneration = 3;
+		fSpecialManaCost = 20.0f;
 		fProtectionTimer = 0.0f;
-		fFireRate = 0.12f;
+		fFireRate = 0.09f;
 		bIsFire = false;
 		bCanFire = false;
 		bIsProtected = true;
@@ -108,12 +127,14 @@ public:
 		nScore = 0;
 		nPlayerID = ID;
 		listPlayerBullet.clear();
-		listPlayerSpeciall.clear();
+		listPlayerSpell.clear();
 		listPlayerBoost.clear();
 		bDead = false;
 	}
 
 	~Player() = default;
+
+	olc::vf2d GetPos(){ return pos; }
 };
 struct sAnimation {
 
@@ -195,11 +216,11 @@ struct sBoost
 
 struct sEnemyDefinition
 {
-	double dTriggerTime = 0.0f;
+	int dTriggerTime = 0;
 	float fOffset = 0.0f;
 
 	uint32_t nSpriteID = 0;
-	bool bBoos;
+	bool bBoos = 0;
 	int nEnemyLives = 0;
 	
 

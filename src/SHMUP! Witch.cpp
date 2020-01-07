@@ -3,9 +3,14 @@
 #include "patherns.h"
 #include <array>
 #include <cstdint>
+#include <cstdlib>
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
+#include <fstream>
+#include <iostream>
+#include <random>
+#include <ctime>
 #include "irrKlang.h"
 #pragma comment(lib, "irrKlang.lib")
 
@@ -17,7 +22,7 @@ public:
 	{
 		sAppName = "SHMUP! Witch";
 	}
-
+	
 	//LISTS
 	std::list<sEnemyDefinition> listSpawns;
 	std::list<sEnemyDefinition> listSpawnsBkp;
@@ -30,6 +35,10 @@ public:
 	std::list<sSplash> listSplash;
 	std::list<sDrops> listDrops;
 
+
+	//Players
+	float fP1pos;
+	float fP2pos;
 
 	//SOUND
 	irrklang::ISoundEngine* SoundEngine;
@@ -48,20 +57,101 @@ public:
 	bool bInfo = false;
 	bool bQuit = false;
 	bool bInfoPanel = false;
+	bool bOptions = false;
+	bool bOptionsMenu = false;
+	bool bSounds = false;
+	bool bSoundPanel = false;
+	bool bMainMenu = false;
+	bool bBack = false;
+	bool bVolume = false;
+	bool bMusic = false;
+	bool bMusicON = true;
+	bool bWin;
+	bool bTimeOut = false;
+	int nVolumeLvl = 5;
 
+	int nLastHiScore;
 	int nHiScore = 0;
+	float fTimer = 0;
 	float fBlinkCounter;
 	float fBossHealth;
+	float fBoosMax;
+	std::string txtHiScore = "0";
+	int nBuffScore1 = 0;
+	int nBuffScore2 = 0;
+	int nMaxLevelTime = 55;
+
+	//SCORE
+	std::ofstream writeHiScore;
+	std::ifstream readHiScore;
 
 	//BOOSTS
 	sBoost boostSpeed;
+	sBoost boostFire;
 
 	//ANIMATIONS
 
 	sAnimation aSpecialP1;
 	sAnimation aSpecialP2;
 
+	//ENEMIES
+	sEnemyDefinition sPumpkin;
+	sEnemyDefinition sBat;
+	sEnemyDefinition sGhost;
+	sEnemyDefinition sMoon;
+	sEnemyDefinition sWitch;
+
+
+	
+	bool bFirstSpawn = true;
+	int nWave = 0;
 	//FUNCTIONS
+
+	void SpawnLevel(int nWave, int nPumpkins = 5, int nBats = 30, int nGhost = 2, int nWitch = 1, int nLevelDistance = 600) 
+	{
+			nLevelDistance += nWave * 50;
+			nMaxLevelTime += 5;
+			for (int i = 0; i < nPumpkins + nWave; i++)
+			{
+				sPumpkin.dTriggerTime = ((rand() % nLevelDistance/5) * 35 + i * 5)+1;
+				sPumpkin.fOffset = (2 + (rand() % 7)) * 0.1;
+				listSpawns.push_back(sPumpkin);
+			}
+			for (int i = 0; i < nBats + nWave * 5; i++)
+			{
+				sBat.dTriggerTime = (rand() % nLevelDistance / 50) * 400 + i+1;
+				sBat.fOffset = (2 + (rand() % 7)) * 0.1;
+				listSpawns.push_back(sBat);
+			}
+			for (int i = 0; i < nGhost + (int)(nWave / 2); i++)
+			{
+				sGhost.dTriggerTime = (rand() % nLevelDistance / 5) * 40+1;
+				sGhost.fOffset = (2 + (rand() % 7)) * 0.1;
+				listSpawns.push_back(sGhost);
+			}
+			for (int i = 0; i < nWitch + (int)(nWave/4); i++)
+			{
+				sWitch.dTriggerTime = (rand() % nLevelDistance / 2) * 16+1;
+				sWitch.fOffset = (2 + (rand() % 7)) * 0.1;
+				listSpawns.push_back(sWitch);
+			}
+			sMoon.dTriggerTime = nLevelDistance * 8;
+			sMoon.fOffset = 0.5f;
+			fBoosMax = 20 + nWave * 10;
+			sMoon.nEnemyLives = 20 + nWave * 10;
+			sMoon.bBoos = true;
+			listSpawns.push_back(sMoon);
+			listSpawns.sort([](const sEnemyDefinition& enemy1, const sEnemyDefinition& enemy2)
+				{
+					return enemy1.dTriggerTime < enemy2.dTriggerTime;
+				});
+			bFirstSpawn = false;
+			listSpawnsBkp = listSpawns;
+
+			
+
+		
+	}
 
 	void Explode(sEnemy& e) {
 		for (int i = 0; i < ((int)sprEnemy[e.def.nSpriteID]->height) * 2; i++)
@@ -73,6 +163,14 @@ public:
 					e.pos + GetMiddle(sprEnemy[e.def.nSpriteID]),
 						{fSpeed * cosf(fAngle), fSpeed * sinf(fAngle)}
 				});
+		}
+	}
+	void Explode(olc::vf2d pos, int f = 10) {
+		for (int i = 0; i < f; i++)
+		{
+			float fAngle = ((float)rand() / (float)RAND_MAX) * 2.0f * 3.14159f;
+			float fSpeed = ((float)rand() / (float)RAND_MAX) * 200.0f + 50;
+			listFragments.push_back({pos,{fSpeed * cosf(fAngle), fSpeed * sinf(fAngle)}});
 		}
 	}
 	void Explode(Player p, olc::vf2d pos, int f, olc::vf2d offset = { 0,0 }) {
@@ -108,17 +206,20 @@ public:
 		listFragments.clear();
 		listFragmentsPlayer1.clear();
 		listFragmentsPlayer2.clear();
-		listSpawns = listSpawnsBkp;
+		listSpawns.clear();
+		listDrops.clear();
 		bGame = true;
 		bStart = true;
 		bPlayer1 = false;
 		bPlayer2 = false;
 		bBoss = false;
+		nWave = 0;
 		vSkyPos.x = 0;
 		fCounter = 0.0f;
-		fWorldSpeed = 90.0f;
+		fTimer = 0;
+		SpawnLevel(nWave);
 		SoundEngine->stopAllSounds();
-		SoundEngine->play2D("art/sounds/slayer_south_of_heaven_8_bit.mp3", GL_TRUE);
+		if (bMusicON)SoundEngine->play2D("art/sounds/slayer_south_of_heaven_8_bit.mp3", GL_TRUE);
 	}
 	void kill(sEnemy& e, Player& p)
 	{
@@ -131,16 +232,20 @@ public:
 		{
 			sDrops d;
 			d.pos = e.pos;
-			d.nID = (rand() % 2);
+			int nRand = 1 + (rand() % 100);
+			if (nRand <= 70) d.nID = 1;
+			if (95 > nRand > 50) d.nID = 2;
+			if (nRand >= 95) d.nID = 2;
 			listDrops.push_back(d);
 		}
 	}
+
 
 	//==============================================================CREATE=========================================================
 
 	bool OnUserCreate() override
 	{
-
+		srand(std::time(0));
 		bGame = true;
 		bStart = true;
 		bPause = false;
@@ -150,13 +255,31 @@ public:
 		boostSpeed.nBoostID = 1;
 		boostSpeed.offset = { -23,19 };
 		boostSpeed.fDuration = 8.0f;
-		boostSpeed.fBonusValue = 100.0f;
+		boostSpeed.fBonusValue = 120.0f;
 		boostSpeed.fBoostCounter = 0.0f;
-		boostSpeed.fManaCost = 15.0f;
+		boostSpeed.fManaCost = 10.0f;
+
+		boostFire.nBoostID = 2;
+		boostFire.offset = { 0,0 };
+		boostFire.fDuration = 8.0f;
+		boostFire.fBonusValue = 0.5f;
+		boostFire.fBoostCounter = 0.0f;
+		boostFire.fManaCost = 20.0f;
+
+
+		//LOAD HI-SCORE
+		readHiScore.open("data/hs.txt", std::ios_base::in);
+		if (readHiScore.is_open()) {
+			while (readHiScore.good()) {
+				std::getline(readHiScore, txtHiScore);
+			}
+		}
+		nHiScore = std::stoi(txtHiScore);
 
 		//SOUND
 		SoundEngine = irrklang::createIrrKlangDevice();
-		SoundEngine->play2D("art/sounds/slayer_south_of_heaven_8_bit.mp3", GL_TRUE);
+		SoundEngine->setSoundVolume(nVolumeLvl * 0.1f);
+		if (bMusicON)SoundEngine->play2D("art/sounds/slayer_south_of_heaven_8_bit.mp3", GL_TRUE);
 
 		// LOAD SPRITES
 		sprPlayer[0] = new olc::Sprite("art/player1.png");
@@ -173,8 +296,8 @@ public:
 		sprEnemyBullet[0] = new olc::Sprite("art/bullet3.png");
 		sprEnemyBullet[1] = new olc::Sprite("art/bullet2.png");
 
-		sprPlayerBullet[0] = new olc::Sprite("art/player1bullet.png");
-		sprPlayerBullet[1] = new olc::Sprite("art/player2bullet.png");
+		sprPlayerBullet[0] = new olc::Sprite("art/player1bullet2.png");
+		sprPlayerBullet[1] = new olc::Sprite("art/player2bullet2.png");
 		sprPlayerBullet[2] = new olc::Sprite("art/wave1.png");
 		sprPlayerBullet[3] = new olc::Sprite("art/wave2.png");
 
@@ -196,13 +319,30 @@ public:
 		sprSplash[1] = new olc::Sprite("art/splash2.png");
 
 		sprPowerUps[0] = new olc::Sprite("art/scroll.png");
-		sprPowerUps[1] = new olc::Sprite("art/scroll2.png");
+		sprPowerUps[1] = new olc::Sprite("art/potion2.png");
+		sprPowerUps[2] = new olc::Sprite("art/cauldron.png");
 
 		sprManaFrame[0] = new olc::Sprite("art/manaP1d.png");
 		sprManaFrame[1] = new olc::Sprite("art/manaP2d.png");
 
 		sprBoost[0] = new olc::Sprite("art/boost1.png");
 		sprBoost[1] = new olc::Sprite("art/boost2.png");
+		sprBoost[2] = new olc::Sprite("art/boost3a.png");
+		sprBoost[3] = new olc::Sprite("art/boost4.png");
+
+		sprUISpecialA[0] = new olc::Sprite("art/UI/special0.png");
+		sprUISpecialA[1] = new olc::Sprite("art/UI/special1.png");
+		sprUISpecialA[2] = new olc::Sprite("art/UI/special2.png");
+		sprUISpecialA[3] = new olc::Sprite("art/UI/special3.png");
+		sprUISpecialA[4] = new olc::Sprite("art/UI/special4.png");
+		sprUISpecialA[5] = new olc::Sprite("art/UI/special5.png");
+
+		sprUISpecialD[0] = new olc::Sprite("art/UI/special0b.png");
+		sprUISpecialD[1] = new olc::Sprite("art/UI/special1b.png");
+		sprUISpecialD[2] = new olc::Sprite("art/UI/special2b.png");
+		sprUISpecialD[3] = new olc::Sprite("art/UI/special3b.png");
+		sprUISpecialD[4] = new olc::Sprite("art/UI/special4b.png");
+		sprUISpecialD[5] = new olc::Sprite("art/UI/special5b.png");
 		
 		aSpecialP1.listFrame.push_back(new olc::Sprite("art/animation/spell0.png"));
 		aSpecialP1.listFrame.push_back(new olc::Sprite("art/animation/spell1.png"));
@@ -213,6 +353,12 @@ public:
 		aSpecialP2.listFrame.push_back(new olc::Sprite("art/animation/lightning2.png"));
 		aSpecialP2.listFrame.push_back(new olc::Sprite("art/animation/lightning3.png"));
 		aSpecialP2.listFrame.push_back(new olc::Sprite("art/animation/lightning4.png"));
+
+		sprSpeedBoost[0] = new olc::Sprite("art/UI/speedBoost.png");
+		sprSpeedBoost[1] = new olc::Sprite("art/UI/speedBoostb.png");
+
+		sprBossBar[0] = new olc::Sprite("art/UI/bossBar.png");
+		sprBossBar[1] = new olc::Sprite("art/UI/bossBarFr.png");
 		
 		// ==========================SCENE=============================
 
@@ -243,38 +389,46 @@ public:
 		for (auto& s : aryStars) s = { (float)(rand() % ScreenWidth()), (float)(rand() % ScreenHeight()) };
 
 
+		//			ENEMY  MODELS
+		
 
-		// LEVEL
-		listSpawns =
-		{	//TIME			OFFSET		SPRITE		BOOS?		LIVES		MOVE				FIRE_PATERN			DROP_RATE			SCORE
-			{200.0f,		0.5f,		0,			0,			2,			Move_None,			Fire_Straight,		100,			200		},
-			{455.0f,		0.55f,		4,			0,			1,			Move_Bat,			Fire_None,			5,				50		},
-			{450.0f,		0.45f,		4,			0,			1,			Move_Bat,			Fire_None,			5,				50		},
-			{475.0f,		0.40f,		4,			0,			1,			Move_Bat,			Fire_None,			5,				50		},
-			{460.0f,		0.65f,		4,			0,			1,			Move_Bat,			Fire_None,			5,				50		},
-			{480.0f,		0.75f,		4,			0,			1,			Move_Bat,			Fire_None,			5,				50		},
-			{490.0f,		0.50f,		4,			0,			1,			Move_Bat,			Fire_None,			5,				50		},
-			{500.0f,		0.65f,		4,			0,			1,			Move_Bat,			Fire_None,			5,				50		},
-			{870.0f,		0.25f,		1,			0,			3,			Move_Sin,			Fire_Triple,		20,				500		},
-			{1020.0f,		0.7f,		1,			0,			3,			Move_Sin,			Fire_Triple,		20,				500		},
-			{1220.0f,		0.75f,		2,			0,			2,			Move_Sin_Fast,		Fire_Fast,			20,				750		},
-			{1300.0f,		0.7f,		0,			0,			2,			Move_None,			Fire_Straight,		15,				200		},
-			{1300.0f,		0.3f,		0,			0,			2,			Move_None,			Fire_Straight,		15,				200		},
-			{1500.0f,		0.5f,		0,			0,			2,			Move_None,			Fire_Straight,		15,				200		},
-			{1680.0f,		0.5f,		2,			0,			2,			Move_Sin_Fast,		Fire_Fast,			15,				750		},
-			{1655.0f,		0.65f,		4,			0,			1,			Move_Bat,			Fire_None,			5,				50		},
-			{1650.0f,		0.45f,		4,			0,			1,			Move_Bat,			Fire_None,			5,				50		},
-			{1675.0f,		0.50f,		4,			0,			1,			Move_Bat,			Fire_None,			5,				50		},
-			{1660.0f,		0.55f,		4,			0,			1,			Move_Bat,			Fire_None,			5,				50		},
-			{1680.0f,		0.85f,		4,			0,			1,			Move_Bat,			Fire_None,			5,				50		},
-			{1690.0f,		0.60f,		4,			0,			1,			Move_Bat,			Fire_None,			5,				50		},
-			{1700.0f,		0.55f,		4,			0,			1,			Move_Bat,			Fire_None,			5,				50		},
-			{2000.0f,		0.5f,		3,			1,			50,			Move_Moon,			Fire_Moon,			25,				1500	}
-		};
+		sPumpkin.nSpriteID = 0;
+		sPumpkin.nEnemyLives = 2;
+		sPumpkin.funcMove = Move_None;
+		sPumpkin.funcFire = Fire_Triple;
+		sPumpkin.nDropRate = 10;
+		sPumpkin.nScore = 200;
+		
+		sBat.nSpriteID = 4;
+		sBat.nEnemyLives = 1;
+		sBat.funcMove = Move_Bat;
+		sBat.funcFire = Fire_None;
+		sBat.nDropRate = 5;
+		sBat.nScore = 50;
+		
+		sGhost.nSpriteID = 1;
+		sGhost.nEnemyLives = 4;
+		sGhost.funcMove = Move_Sin;
+		sGhost.funcFire = Fire_Straight;
+		sGhost.nDropRate = 20;
+		sGhost.nScore = 300;
 
-		listSpawnsBkp = listSpawns;
+		sWitch.nSpriteID = 2;
+		sWitch.nEnemyLives = 2;
+		sWitch.funcMove = Move_Sin_Fast;
+		sWitch.funcFire = Fire_Fast;
+		sWitch.nDropRate = 50;
+		sWitch.nScore = 500;
 
+		sMoon.nSpriteID = 3;
+		sMoon.nEnemyLives = 50;
+		sMoon.funcMove = Move_Moon;
+		sMoon.funcFire = Fire_Moon;
+		sMoon.nDropRate = 100;
+		sMoon.bBoos = true;
+		sMoon.nScore = 1500;
 
+	
 		return true;
 	}
 
@@ -282,34 +436,22 @@ public:
 
 	bool OnUserUpdate(float fElapsedTime) override
 	{
-		
+		if (listSpawns.empty() && bFirstSpawn) {
+			SpawnLevel(nWave);
+		}
 
 		if (GetKey(olc::ESCAPE).bPressed && bGame)
 			if (!bPause)
 			{
 				bPause = true;
-				bResume = true;
-				SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE);
-			}
-			else if(!bInfoPanel)
-			{ 
-				bPause = false;
-				bResume = false;
-				bRestart = false;
-				bInfo = false;
-				bQuit = false;
-				SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE);
-			}
-			else
-			{
-				bResume = true;
-				bInfoPanel = false;
+				bMainMenu = true;
+				//bResume = true;
 				SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE);
 			}
 
 		if (!bPause) {
 			// ==================== Player ================
-
+			if(bGame && !bStart && !bWin)fTimer += fElapsedTime;
 			if (GetKey(olc::SPACE).bPressed && !bPlayer1 && bGame)
 			{
 				Player* player = new Player(1);
@@ -318,14 +460,13 @@ public:
 				if (bStart) bStart = false;
 			}
 
-			if (GetKey(olc::NP0).bPressed && !bPlayer2 && bGame)
+			if (GetMouse(0).bPressed && !bPlayer2 && bGame)
 			{
 				Player* player = new Player(2);
 				listPlayers.push_back(*player);
 				bPlayer2 = true;
 				if (bStart) bStart = false;
 			}
-
 			//PLAYER UPDATE + INPUT
 			for (auto& p : listPlayers)
 			{
@@ -335,36 +476,95 @@ public:
 		//Player1
 				if (p.nPlayerID == 1)
 				{
-					if (GetKey(olc::W).bHeld) p.pos.y -= p.fSpeed * fElapsedTime * 1.2f;
-					if (GetKey(olc::S).bHeld) p.pos.y += p.fSpeed * fElapsedTime * 1.2f;
-					if (GetKey(olc::A).bHeld) p.pos.x -= p.fSpeed * fElapsedTime;
-					if (GetKey(olc::D).bHeld) p.pos.x += p.fSpeed * fElapsedTime;
+					//MOVEMENT
+					if (GetKey(olc::W).bHeld) {p.vInput.y -= p.fInputSens * fElapsedTime; p.bInput = true;}
+					if (!GetKey(olc::W).bHeld && p.vInput.y < p.pos.y )p.vInput.y += p.fInputSens * fElapsedTime;
+					if (GetKey(olc::S).bHeld){ p.vInput.y += p.fInputSens * fElapsedTime; p.bInput = true;}
+					if (!GetKey(olc::S).bHeld && p.vInput.y > p.pos.y )p.vInput.y -= p.fInputSens* fElapsedTime;
+					if (GetKey(olc::A).bHeld){ p.vInput.x -= p.fInputSens * fElapsedTime; p.bInput = true;}
+					if (!GetKey(olc::A).bHeld && p.vInput.x < p.pos.x )p.vInput.x += p.fInputSens * fElapsedTime;
+					if (GetKey(olc::D).bHeld){ p.vInput.x += p.fInputSens * fElapsedTime; p.bInput = true;}
+					if (!GetKey(olc::D).bHeld && p.vInput.x > p.pos.x )p.vInput.x -= p.fInputSens * fElapsedTime;
+
+					if (GetKey(olc::D).bHeld && GetKey(olc::A).bHeld)p.vInput.x -= p.fInputSens/2 * fElapsedTime;;
+					//DEADZONE
+					if ((!GetKey(olc::D).bHeld) && (!GetKey(olc::A).bHeld)) {
+						if (std::abs(p.vInput.x - p.pos.x) <= 0.1f)p.vInput.x = p.pos.x;
+
+					}
+					if ((!GetKey(olc::W).bHeld) && (!GetKey(olc::S).bHeld)) {
+						
+						if (std::abs(p.vInput.y - p.pos.y) <= 0.5f)p.vInput.y = p.pos.y;
+					}
+
+					//FIRE + SPELLS
 					p.bIsFire = (GetKey(olc::SPACE).bHeld) ? 1 : 0;
-					/*
-					p.bSpeciall = (GetKey(olc::V).bHeld) ? 1 : 0;
-					p.bBoost = (GetKey(olc::B).bHeld) ? 1 : 0;
-				*/
+					p.bActiveSpecial = (GetKey(olc::ALT).bHeld) ? 1 : 0;
+					if (GetKey(olc::K1).bPressed) { p.bActiveSpecial = false; p.nActiveSpecialID = 1;}
+					if (GetKey(olc::K2).bPressed) { p.bActiveSpecial = false; p.nActiveSpecialID = 2;}
+					if (GetKey(olc::K3).bPressed) { p.bActiveSpecial = false; p.nActiveSpecialID = 3;}
 				}
 				//Player2
 				if (p.nPlayerID == 2)
 				{
-					if (GetKey(olc::UP).bHeld) p.pos.y -= p.fSpeed * fElapsedTime * 1.2f;
-					if (GetKey(olc::DOWN).bHeld) p.pos.y += p.fSpeed * fElapsedTime * 1.2f;
-					if (GetKey(olc::LEFT).bHeld) p.pos.x -= p.fSpeed * fElapsedTime;
-					if (GetKey(olc::RIGHT).bHeld) p.pos.x += p.fSpeed * fElapsedTime;
-					p.bIsFire = (GetKey(olc::NP0).bHeld) ? 1 : 0;
-					p.bSpeciall = (GetKey(olc::NP_ADD).bHeld) ? 1 : 0;
-					p.bBoost = (GetKey(olc::NP_SUB).bHeld) ? 1 : 0;
+					//MOVEMENT
+					if (GetKey(olc::UP).bHeld) { p.vInput.y -= p.fInputSens * fElapsedTime; p.bInput = true; }
+					if (!GetKey(olc::UP).bHeld && p.vInput.y < p.pos.y)p.vInput.y += p.fInputSens * fElapsedTime;
+					if (GetKey(olc::DOWN).bHeld) { p.vInput.y += p.fInputSens * fElapsedTime; p.bInput = true; }
+					if (!GetKey(olc::DOWN).bHeld && p.vInput.y > p.pos.y)p.vInput.y -= p.fInputSens * fElapsedTime;
+					if (GetKey(olc::LEFT).bHeld) { p.vInput.x -= p.fInputSens * fElapsedTime; p.bInput = true; }
+					if (!GetKey(olc::LEFT).bHeld && p.vInput.x < p.pos.x)p.vInput.x += p.fInputSens * fElapsedTime;
+					if (GetKey(olc::RIGHT).bHeld) { p.vInput.x += p.fInputSens * fElapsedTime; p.bInput = true; }
+					if (!GetKey(olc::RIGHT).bHeld && p.vInput.x > p.pos.x)p.vInput.x -= p.fInputSens * fElapsedTime;
+
+					if (GetKey(olc::RIGHT).bHeld && GetKey(olc::LEFT).bHeld) p.vInput.x = 0;
+					//DEADZONE
+					if ((!GetKey(olc::RIGHT).bHeld) && (!GetKey(olc::LEFT).bHeld)) {
+						if (std::abs(p.vInput.x - p.pos.x) <= 0.1f)p.vInput.x = p.pos.x;
+
+					}
+					if ((!GetKey(olc::UP).bHeld) && (!GetKey(olc::DOWN).bHeld)) {
+
+						if (std::abs(p.vInput.y - p.pos.y) <= 0.5f)p.vInput.y = p.pos.y;
+					}
+
+
+					//FIRE + SPELLS
+					p.bIsFire = (GetMouse(0).bHeld) ? 1 : 0;
+					p.bActiveSpecial = (GetMouse(1).bHeld) ? 1 : 0;
+					if (GetKey(olc::DEL).bPressed) {p.bActiveSpecial = false;  p.nActiveSpecialID = 1;}
+					if (GetKey(olc::END).bPressed) {p.bActiveSpecial = false;  p.nActiveSpecialID = 2;}		
+					if (GetKey(olc::PGDN).bPressed) {p.bActiveSpecial = false;  p.nActiveSpecialID = 3;}
 				}
 
-				//WORLD SPEED
-				p.pos.x -= fWorldSpeed * fElapsedTime * 0.8;
+				
+								//INPUT CLAMP
+				if (p.vInput.x >= p.pos.x + 1)p.vInput.x = p.pos.x + 1;
+				if (p.vInput.x <= p.pos.x - 1)p.vInput.x = p.pos.x - 1;
+				if (p.vInput.y >= p.pos.y + 1)p.vInput.y = p.pos.y + 1;
+				if (p.vInput.y <= p.pos.y - 1)p.vInput.y = p.pos.y - 1;
+
+				if (p.vInput.x <= 0) p.vInput.x = 0;
+				if (p.vInput.y <= 0) p.vInput.y = 0;
+				if (p.vInput.x + (float)sprPlayer[p.nPlayerID - 1]->width >= (float)ScreenWidth()) p.vInput.x = (float)ScreenWidth() - (float)sprPlayer[p.nPlayerID - 1]->width;
+				if (p.vInput.y + (float)sprPlayer[p.nPlayerID - 1]->height >= (float)ScreenHeight()) p.vInput.y = (float)ScreenHeight() - (float)sprPlayer[p.nPlayerID - 1]->height;
+
+
+				//MOVEMENT
+				p.vel = (p.vInput - p.pos) * p.fSpeed;
+				if(p.pos.x > 20)p.vel.x -=  p.pos.x/2;
+
+				p.vInput += p.vel * fElapsedTime;
+				p.pos += p.vel * fElapsedTime;
+				
+
 
 				//CLAMP
 				if (p.pos.x <= 0) p.pos.x = 0;
 				if (p.pos.y <= 0) p.pos.y = 0;
 				if (p.pos.x + (float)sprPlayer[p.nPlayerID - 1]->width >= (float)ScreenWidth()) p.pos.x = (float)ScreenWidth() - (float)sprPlayer[p.nPlayerID - 1]->width;
-				if (p.pos.y + (float)sprPlayer[p.nPlayerID - 1]->height >= (float)ScreenHeight()) p.pos.y = (float)ScreenHeight() - (float)sprPlayer[p.nPlayerID - 1]->height;
+				if (p.pos.y + (float)sprPlayer[p.nPlayerID - 1]->height >= (float)ScreenHeight()) p.pos.y = (float)ScreenHeight() - (float)sprPlayer[p.nPlayerID - 1]->height ;
+
 
 				//POWER UPS
 				for (auto& d : listDrops)
@@ -373,8 +573,9 @@ public:
 					{
 						SoundEngine->play2D("art/sounds/powerup.wav", GL_FALSE);
 						d.bRemove = true;
-						if (d.nID == 0) p.fFireRate -= 0.04f;
-						if (d.nID == 1) p.fSpeed += 20.0f;
+						if (d.nID == 0) p.fManaRegeneration += 0.2;
+						if (d.nID == 1) p.fMana += 20.0f;
+						if (d.nID == 2) (p.nLives < 4) ? p.nLives++ : p.nScore += 5000;
 					}
 				}
 
@@ -383,7 +584,7 @@ public:
 				{
 					sBullet b;
 					b.pos = { p.pos.x + (float)sprPlayer[p.nPlayerID - 1]->width, p.pos.y + (float)sprPlayer[p.nPlayerID - 1]->height / 3 };
-					b.vel = { 500.0f, 0.0f };
+					b.vel = p.vel + olc::vf2d {p.fBulletSpeed, -p.vel.y * 0.3f};
 					b.nBulletTypeID = 0;
 					p.listPlayerBullet.push_back(b);
 					p.bCanFire = false;
@@ -419,104 +620,126 @@ public:
 				p.listPlayerBullet.remove_if([&](const sBullet& b) {return b.pos.x < 0.0f || b.pos.y < 0.0f || b.pos.x >(float)ScreenWidth() || b.pos.y >(float)ScreenHeight() || b.bRemove; });
 
 				//SPECIAL
-				if (p.bSpeciall && p.fMana > p.fSpeciallManaCost && p.bSpeciallReady)
-				{
-					sSpell s;
-					s.pos = { p.pos.x + (float)sprPlayer[p.nPlayerID - 1]->width, p.pos.y - 15 };
-					s.vel = { 280.0f, 0.0f };
-					p.listPlayerSpeciall.push_back(s);
-					p.fMana -= p.fSpeciallManaCost;
-					p.bSpeciallReady = false;
-					if(p.nPlayerID == 1) SoundEngine->play2D("art/sounds/warp.wav", GL_FALSE);
-					else SoundEngine->play2D("art/sounds/electricShock.wav", GL_FALSE);
-				}
-				for (auto& s : p.listPlayerSpeciall)
-				{
-					s.pos += (s.vel - olc::vf2d(fWorldSpeed, 0.0f)) * fElapsedTime;
-					s.fCounter += fElapsedTime;
-					if (s.fCounter > 0.08f) {
-						s.fCounter = 0.0f;
-						s.bReady = true;
-					}
-					for (auto& e : listEnemy)
+					if (p.bActiveSpecial && p.nActiveSpecialID == 1 && p.fMana > p.fSpecialManaCost && p.bSpecialReady)
 					{
-						if (((s.pos + GetMiddle(aSpecialP1.playAnimation(fElapsedTime))) - (e.pos + GetMiddle(sprEnemy[e.def.nSpriteID]))).mag() < ((float)sprEnemy[e.def.nSpriteID]->width + (float)aSpecialP1.playAnimation(fElapsedTime)->width) / 2.0f  && s.bReady )
-						{
-							e.def.nEnemyLives--;
-							if (p.nPlayerID == 1)SoundEngine->play2D("art/sounds/zap.wav", GL_FALSE);
-							else SoundEngine->play2D("art/sounds/zap.mp3", GL_FALSE);
-							Explode(p, s.pos, 8);
-							sSplash sp;
-							sp.pos = e.pos;
-							sp.nID = p.nPlayerID;
-							sp.fCounter = 0.0f;
-							listSplash.push_back(sp);
-							s.bReady = false;
-							if (e.def.nEnemyLives <= 0)
-							{
-								kill(e, p);
-							}
-						}
+						sSpell s;
+						s.pos = { p.pos.x + (float)sprPlayer[p.nPlayerID - 1]->width, p.pos.y - 15 };
+						if (s.pos.y <= 1) s.pos.y = 1;
+						s.vel = { 400.0f, 0.0f };
+						p.listPlayerSpell.push_back(s);
+						p.fMana -= p.fSpecialManaCost;
+						p.bSpecialReady = false;
+						if (p.nPlayerID == 1) SoundEngine->play2D("art/sounds/warp.wav", GL_FALSE);
+						else SoundEngine->play2D("art/sounds/electricShock.wav", GL_FALSE);
 					}
-				}
-				p.listPlayerSpeciall.remove_if([&](const sSpell& b) {return b.pos.x < 0.0f || b.pos.y < 0.0f || b.pos.x >(float)ScreenWidth() || b.pos.y >(float)ScreenHeight(); });
 
-
-				//BOOST
-
-				if (p.bBoost && !p.bBoostActive)
-				{
-					if (p.fMana >= boostSpeed.fManaCost / 3) {
-						p.listPlayerBoost.push_back(boostSpeed);
-						p.fSpeed += boostSpeed.fBonusValue;
-						p.bBoostActive = true;
-					}
-				}
-
-				if (p.bBoostActive)
-				{
-					for (auto& b : p.listPlayerBoost)
+					//SPELL
+					for (auto& s : p.listPlayerSpell)
 					{
-						p.fMana -= b.fManaCost * fElapsedTime;
-						b.fCharge += fElapsedTime;
-						if (b.fCharge > 0.3f) {
-							b.fCharge = 0.0f;
-							b.bReady = true;
+						s.pos += (s.vel - olc::vf2d(fWorldSpeed, 0.0f)) * fElapsedTime;
+						s.fCounter += fElapsedTime;
+						if (s.fCounter > 0.08f) {
+							s.fCounter = 0.0f;
+							s.bReady = true;
 						}
 						for (auto& e : listEnemy)
 						{
-							if (((p.pos + b.offset) - (e.pos + GetMiddle(sprEnemy[e.def.nSpriteID]))).mag() < ((float)sprEnemy[e.def.nSpriteID]->width + (float)sprBoost[0]->width) / 2.2f && b.bReady)
+							if (((s.pos + GetMiddle(aSpecialP1.playAnimation(fElapsedTime))) - (e.pos + GetMiddle(sprEnemy[e.def.nSpriteID]))).mag() < ((float)sprEnemy[e.def.nSpriteID]->width + (float)aSpecialP1.playAnimation(fElapsedTime)->width) / 2.0f && s.bReady)
 							{
 								e.def.nEnemyLives--;
-								SoundEngine->play2D("art/sounds/zap.wav", GL_FALSE);
-								Explode(p, (p.pos + b.offset * 1.5f + GetMiddle(sprBoost[0])), 8);
-								sSplash s;
-								s.pos = (p.pos + b.offset * 1.5f);
-								s.nID = p.nPlayerID;
-								s.fCounter = 0.0f;
-								listSplash.push_back(s);
-								b.bReady = false;
+								if (p.nPlayerID == 1)SoundEngine->play2D("art/sounds/zap.wav", GL_FALSE);
+								else SoundEngine->play2D("art/sounds/zap.mp3", GL_FALSE);
+								Explode(p, s.pos, 8);
+								sSplash sp;
+								sp.pos = e.pos;
+								sp.nID = p.nPlayerID;
+								sp.fCounter = 0.0f;
+								listSplash.push_back(sp);
+								s.bReady = false;
 								if (e.def.nEnemyLives <= 0)
 								{
 									kill(e, p);
 								}
 							}
 						}
+					}
+					p.listPlayerSpell.remove_if([&](const sSpell& b) {return b.pos.x < 0.0f || b.pos.y < 0.0f || b.pos.x >(float)ScreenWidth() || b.pos.y >(float)ScreenHeight(); });
 
-						//Explode(p, p.pos, 1, {-18, 30});
-						b.fBoostCounter += fElapsedTime;
-						if (b.fBoostCounter >= b.fDuration || p.fMana <= 1 || !p.bBoost)
-						{
-							if (b.nBoostID == 1)p.fSpeed -= b.fBonusValue;
-							b.fBoostCounter = 0.0f;
-							b.bRemove = true;
-							p.bBoostActive = false;
+
+					//BOOST
+					if (p.bActiveSpecial && p.nActiveSpecialID == 2 && !p.bBoostActive)
+					{
+						if (p.fMana >= boostSpeed.fManaCost / 3) {
+							p.listPlayerBoost.push_back(boostSpeed);
+							p.fSpeed += boostSpeed.fBonusValue;
+							p.fBulletSpeed += boostSpeed.fBonusValue;
+							p.bBoostActive = true;
 						}
 					}
-				}
-				p.listPlayerBoost.remove_if([&](const sBoost& b) {return b.bRemove; });
+					if (p.bActiveSpecial && p.nActiveSpecialID == 3 && !p.bBoostActive)
+					{
+						if (p.fMana >= boostFire.fManaCost / 3) {
+							p.listPlayerBoost.push_back(boostFire);
+							p.fBoostBuffor = (p.fFireRate * boostFire.fBonusValue);
+							p.fFireRate -= p.fBoostBuffor;
+							p.bBoostActive = true;
+						}
+					}
 
+					if (p.bBoostActive)
+					{
+						for (auto& b : p.listPlayerBoost)
+						{
+							p.fMana -= b.fManaCost * fElapsedTime;
+							b.fCharge += fElapsedTime;
+							if (b.fCharge > 0.15f) {
+								b.fCharge = 0.0f;
+								b.bReady = true;
+							}
+							
+							if(b.nBoostID == 1){
+							for (auto& e : listEnemy)
+							{
+								if (((p.pos + b.offset) - (e.pos + GetMiddle(sprEnemy[e.def.nSpriteID]))).mag() < ((float)sprEnemy[e.def.nSpriteID]->width + (float)sprBoost[0]->width) / 2.2f && b.bReady)
+								{
+									e.def.nEnemyLives--;
+									SoundEngine->play2D("art/sounds/zap.wav", GL_FALSE);
+									Explode(p, (p.pos + b.offset * 1.5f + GetMiddle(sprBoost[0])), 8);
+									sSplash s;
+									s.pos = (p.pos + b.offset * 1.5f);
+									s.nID = p.nPlayerID;
+									s.fCounter = 0.0f;
+									listSplash.push_back(s);
+									b.bReady = false;
+									if (e.def.nEnemyLives <= 0)
+									{
+										kill(e, p);
+									}
+								}
+							}
+							}
+
+							//Explode(p, p.pos, 1, {-18, 30});
+							b.fBoostCounter += fElapsedTime;
+							if (b.fBoostCounter >= b.fDuration || p.fMana <= 1 || !p.bActiveSpecial)
+							{
+								if (b.nBoostID == 1) {
+									p.fSpeed -= b.fBonusValue;
+									p.fBulletSpeed -= b.fBonusValue;
+								}
+								if (b.nBoostID == 2)p.fFireRate += p.fBoostBuffor;
+								b.fBoostCounter = 0.0f;
+								b.bRemove = true;
+								p.bBoostActive = false;
+							}
+						}
+					}
+					p.listPlayerBoost.remove_if([&](const sBoost& b) {return b.bRemove; });
+				
 				//COUNTERS
+					if (p.nPlayerID == 1)fP1pos = p.pos.x;
+					else fP2pos = p.pos.x;
+
 				p.fGunReloadTimer += fElapsedTime * 0.5f;
 				if (p.fGunReloadTimer >= p.fFireRate)
 				{
@@ -524,12 +747,11 @@ public:
 					p.bCanFire = true;
 				}
 
-
 				p.fSpecialCooldown += fElapsedTime;
-				if (p.fSpecialCooldown >= 1.0f)
+				if (p.fSpecialCooldown >= 2.0f)
 				{
-					p.bSpeciallReady = true;
 					p.fSpecialCooldown = 0.0f;
+					p.bSpecialReady = true;
 				}
 
 				p.fMana += fElapsedTime * p.fManaRegeneration;
@@ -542,12 +764,19 @@ public:
 				}
 			}
 			//REMOVE
-			listPlayers.remove_if([&](const Player& p) {return p.bDead; });
+			listPlayers.remove_if([&](const Player& p) {return p.bDead || bTimeOut; });
 
 
 	//============= World =========
 
 			if (!bStart) dWorldPos += fWorldSpeed * fElapsedTime;
+			//World Speed
+			if (bPlayer1 && bPlayer2) {
+				float fMiddlePoint = (fP1pos > fP2pos) ? fP1pos - (fP1pos - fP2pos)/2 : fP2pos - (fP2pos - fP1pos)/2;
+				fWorldSpeed = (fMiddlePoint > (float)ScreenWidth() * 0.5f) ? fMiddlePoint / 2 + 50 : fMiddlePoint / 3 + 80;
+			}
+			else if (bPlayer1)fWorldSpeed = (fP1pos > (float)ScreenWidth() * 0.5f) ? fP1pos / 2 + 70 : fP1pos / 3 + 100;
+			else if(bPlayer2)fWorldSpeed = (fP2pos > (float)ScreenWidth() * 0.5f) ? fP2pos / 2 + 70 : fP2pos / 3 + 100;
 
 			//Sky
 			vSkyPos.x -= fElapsedTime * 5;
@@ -596,13 +825,16 @@ public:
 				{
 					if (((e.pos + GetMiddle(sprEnemy[e.def.nSpriteID])) - (p.pos + GetMiddle(sprPlayer[p.nPlayerID - 1]))).mag() < (float)sprPlayer[p.nPlayerID - 1]->width / 1.95f && !p.bIsProtected)
 					{
-						if (p.fMana > p.fMaxMana) { p.fMaxMana -= p.fMaxMana / 2; p.nLives--; }
+						// make Lose Life function !!!!!!!!!!!!!!!!!!!
+						if (p.fMana >= p.fMaxMana/2)p.fMana -= p.fMaxMana / 2;
+						else p.nLives--; 
 						SoundEngine->play2D("art/sounds/loose.wav", GL_FALSE);
 						if (p.nLives <= 0)
 						{
 							Explode(p, p.pos, 1000);
-							if (p.nPlayerID == 1) bPlayer1 = false;
-							if (p.nPlayerID == 2) bPlayer2 = false;
+							if (p.nPlayerID == 1) { bPlayer1 = false; nBuffScore1 = p.nScore; }
+							if (p.nPlayerID == 2) { bPlayer2 = false; nBuffScore2 = p.nScore;
+							}
 							p.bDead = true;
 							SoundEngine->play2D("art/sounds/explode.wav", GL_FALSE);
 						}
@@ -618,17 +850,18 @@ public:
 				b.pos += (b.vel - olc::vf2d(fWorldSpeed, 0.0f)) * fElapsedTime;
 				for (auto& p : listPlayers)
 				{
-					if (((b.pos + GetMiddle(sprEnemyBullet[b.nBulletTypeID])) - (p.pos + GetMiddle(sprPlayer[p.nPlayerID - 1]))).mag() < (float)sprPlayer[p.nPlayerID - 1]->width / 1.95f && !p.bIsProtected)
+					if (((b.pos + GetMiddle(sprEnemyBullet[b.nBulletTypeID])) - (p.pos + GetMiddle(sprPlayer[p.nPlayerID - 1]))).mag() < (float)sprPlayer[p.nPlayerID - 1]->width / 2.2f && !p.bIsProtected)
 					{
+						// make Lose Life function !!!!!!!!!!!!!!!!!!!
 						b.bRemove = true;
-						if (p.fMana >= p.fMaxMana/3) p.fMana -= p.fMaxMana / 2; 
-						else p.nLives--; 
+						if (p.fMana >= p.fMaxMana / 2)p.fMana -= p.fMaxMana / 2;
+						else p.nLives--;
 						SoundEngine->play2D("art/sounds/loose.wav", GL_FALSE);
 						if (p.nLives <= 0)
 						{
 							Explode(p, p.pos, 1000);
-							if (p.nPlayerID == 1) bPlayer1 = false;
-							if (p.nPlayerID == 2) bPlayer2 = false;
+							if (p.nPlayerID == 1){ bPlayer1 = false; nBuffScore1 = p.nScore;}
+							if (p.nPlayerID == 2){ bPlayer2 = false; nBuffScore2 = p.nScore;}
 							p.bDead = true;
 							SoundEngine->play2D("art/sounds/explode.wav", GL_FALSE);
 						}
@@ -646,32 +879,143 @@ public:
 			listSplash.remove_if([&](const sSplash& s) {return s.fCounter >= 0.15f; });
 			listDrops.remove_if([&](const sDrops& d) {return d.fCounter >= 5 || d.bRemove; });
 		}
-		if(bPause)
+
+		//=========================================================== PAUSE MENU ===============================================================
+		if (bPause)
 		{
-			if (bResume)
-			{
-				if (GetKey(olc::ENTER).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bPause = false; bResume = false; }
-				if (GetKey(olc::UP).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bQuit = true; bResume = false;}
-				if (GetKey(olc::DOWN).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bRestart = true; bResume = false;}
+			//	SAVE HI SCORE
+			readHiScore.open("data/hs.txt", std::ios_base::in);
+			if (readHiScore.is_open()) {
+				while (readHiScore.good()) {
+					std::getline(readHiScore, txtHiScore);
+				}
 			}
-			else if (bRestart)
+			nLastHiScore = std::stoi(txtHiScore);
+			if (nHiScore > nLastHiScore)
 			{
-				if (GetKey(olc::ENTER).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); restart(); bRestart = false; bPause = false; }
-				if (GetKey(olc::UP).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bResume = true; bRestart = false; }
-				if (GetKey(olc::DOWN).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bInfo = true; bRestart = false; }
+				writeHiScore.open("data/hs.txt", std::ios_base::trunc);
+				if (writeHiScore.is_open()) {
+					writeHiScore << std::to_string(nHiScore);
+					writeHiScore.close();
+				}
 			}
-			else if (bInfo)
+
+			//							MAIN MENU
+			if(bMainMenu)
 			{
-				if (GetKey(olc::ENTER).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bInfoPanel = true; bInfo = false; }
-				if (GetKey(olc::UP).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bRestart = true; bInfo = false; }
-				if (GetKey(olc::DOWN).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bQuit = true; bInfo = false; }
+				if (bResume)
+				{
+					if (GetKey(olc::ENTER).bPressed || (GetKey(olc::ESCAPE).bPressed)) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bPause = false; bResume = false; bMainMenu = false; }
+					if (GetKey(olc::UP).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bQuit = true; bResume = false; }
+					if (GetKey(olc::DOWN).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bRestart = true; bResume = false; }
+				}
+				else if (bRestart)
+				{
+					if (GetKey(olc::ENTER).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); restart(); bRestart = false; bPause = false; bMainMenu = false; }
+					if (GetKey(olc::UP).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bResume = true; bRestart = false; }
+					if (GetKey(olc::DOWN).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bOptions = true; bRestart = false; }
+					if (GetKey(olc::ESCAPE).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bPause = false; bRestart = false; bMainMenu = false; }
+				}
+				else if (bOptions)
+				{
+					if (GetKey(olc::ENTER).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bOptionsMenu = true; bInfo = true; bMainMenu = false; bOptions = false; }
+					if (GetKey(olc::UP).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bRestart = true; bOptions = false; }
+					if (GetKey(olc::DOWN).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bQuit = true; bOptions = false; }
+					if (GetKey(olc::ESCAPE).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bPause = false; bOptions = false; bMainMenu = false; }
+				}
+
+				else if (bQuit)
+				{
+					if (GetKey(olc::ENTER).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); exit(0); }
+					if (GetKey(olc::UP).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bOptions = true; bQuit = false; }
+					if (GetKey(olc::DOWN).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bResume = true; bQuit = false; }
+					if (GetKey(olc::ESCAPE).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bPause = false; bQuit = false; bMainMenu = false; }
+				}
+				else bResume = true;
 			}
-			else if (bQuit)
+			//								 OPTIONS
+			else if (bOptionsMenu)
 			{
-				if (GetKey(olc::ENTER).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); exit(0); }
-				if (GetKey(olc::UP).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bInfo = true; bQuit = false; }
-				if (GetKey(olc::DOWN).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bResume = true; bQuit = false; }
+				if (bInfo)
+				{
+					if (GetKey(olc::ENTER).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bInfoPanel = true; bBack = true; bInfo = false; bOptionsMenu = false; }
+					if (GetKey(olc::UP).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bBack = true; bInfo = false; }
+					if (GetKey(olc::DOWN).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bSounds = true; bInfo = false; }
+					if (GetKey(olc::ESCAPE).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bOptionsMenu = false; bMainMenu = true; bResume = true; bInfo = false; }
+				}
+				else if (bSounds)
+				{
+					if (GetKey(olc::ENTER).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bSoundPanel = true; bVolume = true; bSounds = false; bOptionsMenu = false; }
+					if (GetKey(olc::UP).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bInfo = true; bSounds = false; }
+					if (GetKey(olc::DOWN).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bBack = true; bSounds = false; }
+					if (GetKey(olc::ESCAPE).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bOptionsMenu = false; bMainMenu = true; bResume = true; bSounds = false; }
+				}
+				else if (bBack)
+				{
+					if (GetKey(olc::ENTER).bPressed || GetKey(olc::ESCAPE).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bOptionsMenu = false; bMainMenu = true; bResume = true; bBack = false; }
+					if (GetKey(olc::UP).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bSounds = true; bBack = false; }
+					if (GetKey(olc::DOWN).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bInfo = true; bBack = false; }
+				}
 			}
+			//						SOUND OPTIONS
+			else if (bSoundPanel)
+			{
+				if (bVolume)
+				{
+					if (GetKey(olc::LEFT).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); nVolumeLvl--; SoundEngine->setSoundVolume(nVolumeLvl * 0.1f); }
+					if (GetKey(olc::RIGHT).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); nVolumeLvl++; SoundEngine->setSoundVolume(nVolumeLvl * 0.1f); }
+					
+					if (nVolumeLvl <= 0) nVolumeLvl = 0;
+					if (nVolumeLvl >= 10) nVolumeLvl = 10;
+
+					if (GetKey(olc::UP).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bBack = true; bVolume = false; }
+					if (GetKey(olc::DOWN).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bMusic = true; bVolume = false; }
+					if (GetKey(olc::ESCAPE).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bOptionsMenu = true; bInfo = true; bSoundPanel = false; bVolume = false; }
+				}
+				else if (bMusic)
+				{
+					if (GetKey(olc::ENTER).bPressed) {
+						if (bMusicON) { SoundEngine->stopAllSounds(); bMusicON = false; }
+						else { SoundEngine->play2D("art/sounds/slayer_south_of_heaven_8_bit.mp3", GL_TRUE); bMusicON = true; }
+					}
+					if (GetKey(olc::UP).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bVolume = true; bMusic = false; }
+					if (GetKey(olc::DOWN).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bBack = true; bMusic = false; }
+					if (GetKey(olc::ESCAPE).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bOptionsMenu = true; bInfo = true; bSoundPanel = false; bMusic = false; }
+				}
+				else if (bBack)
+				{
+					if (GetKey(olc::ENTER).bPressed || GetKey(olc::ESCAPE).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bOptionsMenu = true; bInfo = true; bSoundPanel = false; bBack = false; }
+					if (GetKey(olc::UP).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bMusic = true; bBack = false; }
+					if (GetKey(olc::DOWN).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bVolume = true; bBack = false; }
+				}
+			}
+
+			else if (bInfoPanel)
+			{
+				if (bBack)
+				{
+					if (GetKey(olc::ENTER).bPressed || GetKey(olc::ESCAPE).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bOptionsMenu = true; bBack = false; bInfo = true; bInfoPanel = false; }
+				}
+			}
+
+			else if(bWin)
+			{
+				 if (bRestart)
+				 {
+					if (GetKey(olc::ENTER).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); restart(); bRestart = false; bPause = false; bWin = false; }
+					if (GetKey(olc::RIGHT).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bQuit = true; bRestart = false; }
+					if (GetKey(olc::LEFT).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bQuit = true; bRestart = false; }
+				 }
+
+				 else if (bQuit)
+				 {
+					 if (GetKey(olc::ENTER).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); exit(0); }
+					 if (GetKey(olc::RIGHT).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bRestart = true; bQuit = false; }
+					 if (GetKey(olc::LEFT).bPressed) { SoundEngine->play2D("art/sounds/ping.wav", GL_FALSE); bRestart = true; bQuit = false; }
+				 }
+
+			}
+
 		}
 
 
@@ -683,17 +1027,17 @@ public:
 			fBlinkCounter += fElapsedTime * 5;
 			float fMagic = (cosf(fBlinkCounter) + 1) * 2;
 			olc::Pixel magicPixel = olc::Pixel(fMagic * 40.0f + 60, fMagic * 40.0f + 60, fMagic * 40.0f + 60);
-
+			
 				//Sky
 				for (size_t i = 0; i < arySky.size(); i++)
 				{
 					auto& s = arySky[i];
 
-					s.x -= fWorldSpeed * fElapsedTime * 0.3f;
+					s.x -= fWorldSpeed * 0.001f;
 					DrawSprite(s.x, s.y, sprSky[i%2]);
 					if (s.x + sprSky[i%2]->width < 0) s.x = sprSky[i%2]->width * 3;
 				}
-
+				
 				//Stars
 				for (size_t i = 0; i < aryStars.size(); i++)
 				{
@@ -717,8 +1061,8 @@ public:
 				for (int i = 0; i < aryMountains.size(); i++)
 				{
 					auto& m = aryMountains[i];
-
-					m.x -= fWorldSpeed * fElapsedTime;
+					m.y = (float)ScreenHeight() * 0.1f;
+					m.x -= fWorldSpeed * 0.013f;
 					DrawSprite(m.x, m.y, sprMountains[i % 2]);
 					if (m.x + sprMountains[i]->width < 0) m.x = sprMountains[i]->width;
 				}
@@ -756,24 +1100,28 @@ public:
 						}
 					}
 					if (d.fCounter > 5) d.bRemove = true;
-					d.pos.x -= fWorldSpeed * fElapsedTime * 0.7f;
-					d.fCounter += fElapsedTime;
+					if(!bPause){d.pos.x -= fWorldSpeed * fElapsedTime * 0.7f;
+					d.fCounter += fElapsedTime; }
 				}
 
 				//Player
 				for (auto& p : listPlayers)
 				{
-
+					//Frame counter
 					p.fAnimationFrame += fElapsedTime * 1.5;
 					if (p.fAnimationFrame >= 1) p.fAnimationFrame = 0.0f;
-					for (auto& b : p.listPlayerBoost) DrawSprite(p.pos.x + b.offset.x, p.pos.y + b.offset.y, sprBoost[p.nPlayerID - 1]);
+					//Boost
+					for (auto& b : p.listPlayerBoost) DrawSprite(p.pos.x + b.offset.x, p.pos.y + b.offset.y, sprBoost[((b.nBoostID-1) * 2) + (p.nPlayerID - 1)]);
 					DrawSprite(p.pos.x, p.pos.y, ((p.bIsFire) ? sprPlayerAtack[p.nPlayerID - 1] : sprPlayer[p.nPlayerID - 1]));
+					//Shield
 					if (p.bIsProtected) 
 					{
 						if(p.fAnimationFrame < 0.5f)DrawSprite(p.pos.x - 10, p.pos.y - 8, sprShield[p.nPlayerID - 1]);
 					}
+					//Bulet
 					for (auto& b : p.listPlayerBullet) DrawSprite(b.pos.x, b.pos.y, sprPlayerBullet[b.nBulletTypeID + p.nPlayerID-1]);
-					for (auto& b : p.listPlayerSpeciall) DrawSprite(b.pos.x, b.pos.y, (p.nPlayerID == 1) ? aSpecialP1.playAnimation(fElapsedTime) : aSpecialP2.playAnimation(fElapsedTime, 0.07f));
+					//Spell
+					for (auto& b : p.listPlayerSpell) DrawSprite(b.pos.x, b.pos.y, (p.nPlayerID == 1) ? aSpecialP1.playAnimation(fElapsedTime) : aSpecialP2.playAnimation(fElapsedTime, 0.07f));
 				}
 
 				//Front Scene
@@ -791,79 +1139,209 @@ public:
 
 				//UI
 				for (auto& p : listPlayers) {
-					float offset = (p.nPlayerID - 1) ? 0.80f : 0.02f;
+					//offset
+					float offset = (p.nPlayerID - 1) ? 0.81f : 0.05f;
+					//Score
 					std::ostringstream ss;
 					ss<< std::setw(10) << std::setfill('0') << p.nScore;
 					DrawString((float)ScreenWidth() * offset + 10, (float)ScreenHeight() * 0.035f, (ss.str() + "\n\nP" + std::to_string(p.nPlayerID) + ":"));
+					//Lives
 					for (int i = 0; i < (int)p.nLives; i++) DrawSprite((float)ScreenWidth() * offset + 40 + sprHealth[p.nPlayerID-1]->width*i, (float)ScreenHeight() * 0.07f, sprHealth[p.nPlayerID - 1]);
-					//FillRect((float)ScreenWidth()* offset + 25, (float)ScreenHeight() * 0.12f + 3, (p.fMana / 100 * 60), 9, olc::CYAN);
-					DrawPartialSprite((float)ScreenWidth()* offset + 10, (float)ScreenHeight() * 0.12f, sprManaFrame[p.nPlayerID-1],0,0,sprManaFrame[p.nPlayerID - 1]->width * (p.fMana / 100), sprManaFrame[p.nPlayerID - 1]->height);
+					//Mana
+					DrawPartialSprite((float)ScreenWidth()* offset + 10, (float)ScreenHeight() * 0.12f, sprManaFrame[p.nPlayerID-1],0,0,sprManaFrame[p.nPlayerID - 1]->width * (p.fMana / p.fMaxMana), sprManaFrame[p.nPlayerID - 1]->height);
+					//Special
+					DrawString((float)ScreenWidth()* offset -2 , (float)ScreenHeight() * 0.85f, ((p.nPlayerID == 1) ? " 1" : "DEL"), ((p.nActiveSpecialID == 1) ? ((p.nPlayerID == 1) ? olc::DARK_GREEN : olc::DARK_CYAN) : olc::VERY_DARK_GREY));
+					DrawString((float)ScreenWidth()* offset + 33, (float)ScreenHeight() * 0.85f, ((p.nPlayerID == 1) ? "  2" : "END"), ((p.nActiveSpecialID == 2) ? ((p.nPlayerID == 1) ? olc::DARK_GREEN : olc::DARK_CYAN) : olc::VERY_DARK_GREY));
+					DrawString((float)ScreenWidth()* offset + 72, (float)ScreenHeight() * 0.85f, ((p.nPlayerID == 1) ? "  3" : "PGDN"), ((p.nActiveSpecialID == 3) ? ((p.nPlayerID == 1) ? olc::DARK_GREEN : olc::DARK_CYAN) : olc::VERY_DARK_GREY));
+					DrawString((float)ScreenWidth()* offset + 12, (float)ScreenHeight() * 0.96f, ((p.nPlayerID == 1) ? "ALT = CAST" : "RMB = CAST"), ((p.bActiveSpecial) ? ((p.nPlayerID == 1) ? olc::DARK_GREEN : olc::DARK_CYAN) : olc::VERY_DARK_GREY));
+					DrawSprite((float)ScreenWidth()* offset - 8 , (float)ScreenHeight() * 0.87f, ((p.nActiveSpecialID == 1) ? sprUISpecialA[p.nPlayerID - 1] : sprUISpecialD[p.nPlayerID - 1]));
+					DrawSprite((float)ScreenWidth()* offset + 30, (float)ScreenHeight() * 0.87f, ((p.nActiveSpecialID == 2) ? sprUISpecialA[p.nPlayerID + 1] : sprUISpecialD[p.nPlayerID + 1]));
+					DrawSprite((float)ScreenWidth()* offset + 70, (float)ScreenHeight() * 0.87f, ((p.nActiveSpecialID == 3) ? sprUISpecialA[p.nPlayerID + 3] : sprUISpecialD[p.nPlayerID + 3]));
+				}
+				//BOSS BAR
+				if (bBoss)
+				{
+					DrawString((float)ScreenWidth() * 0.23f, (float)ScreenHeight() * 0.875f, "BOSS: ", olc::DARK_MAGENTA);
+					DrawPartialSprite((float)ScreenWidth() * 0.3f, (float)ScreenHeight() * 0.86f, sprBossBar[0], 0, 0, (fBossHealth / fBoosMax * 250), 20);
+					DrawSprite((float)ScreenWidth() * 0.3f, (float)ScreenHeight() * 0.86f, sprBossBar[1]);
 				}
 
 				SetPixelMode(olc::Pixel::NORMAL);
 
 				//JOIN PLAYER 
-				if (!bPlayer1 && !bStart && bGame)  DrawString((float)ScreenWidth() * 0.05f, (float)ScreenHeight() * 0.055f, "PRESS FIRE\n TO START!", olc::Pixel(fMagic * 20.0f + 60, fMagic * 20.0f + 60, fMagic * 20.0f + 60));
-				if (!bPlayer2 && !bStart && bGame)  DrawString((float)ScreenWidth() * 0.8f, (float)ScreenHeight() * 0.055f, "PRESS FIRE\n TO START!", olc::Pixel(fMagic * 20.0f + 60, fMagic * 20.0f + 60, fMagic * 20.0f + 60));
+				if (!bPlayer1 && !bStart) {
+					DrawString((float)ScreenWidth() * 0.02f, (float)ScreenHeight() * 0.02f, "SCORE:" + std::to_string(nBuffScore1), olc::DARK_GREY, 1U);
+					if(bGame)DrawString((float)ScreenWidth() * 0.02f, (float)ScreenHeight() * 0.055f, "PRESS FIRE\n TO START!", olc::Pixel(fMagic * 20.0f + 60, fMagic * 20.0f + 60, fMagic * 20.0f + 60));
+				}
+				if (!bPlayer2 && !bStart){
+					DrawString((float)ScreenWidth() * 0.82f, (float)ScreenHeight() * 0.02f, "SCORE:" + std::to_string(nBuffScore2), olc::DARK_GREY, 1U);
+					if (bGame)DrawString((float)ScreenWidth() * 0.82f, (float)ScreenHeight() * 0.055f, "PRESS FIRE\n TO START!", olc::Pixel(fMagic * 20.0f + 60, fMagic * 20.0f + 60, fMagic * 20.0f + 60));
+				}
 	
 				//START
 				if (bStart && !bPause)
 				{
-					DrawString((float)ScreenWidth() * 0.42f, (float)ScreenHeight() * 0.25f, "SHMUP!", olc::WHITE, 3U);
-					DrawString((float)ScreenWidth() * 0.37f, (float)ScreenHeight() * 0.38f, "WITCH", olc::WHITE, 5U);
-					DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.7f, "PRESS FIRE TO START...", olc::Pixel(fMagic * 40.0f + 80, fMagic * 40.0f + 80, fMagic * 40.0f + 80));
+					DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.25f, "SHMUP!", olc::WHITE, 3U);
+					DrawString((float)ScreenWidth() * 0.36f, (float)ScreenHeight() * 0.38f, "WITCH", olc::WHITE, 5U);
+					DrawString((float)ScreenWidth() * 0.39f, (float)ScreenHeight() * 0.7f, "PRESS FIRE TO START...", olc::Pixel(fMagic * 40.0f + 80, fMagic * 40.0f + 80, fMagic * 40.0f + 80));
 				}
 				//HI SCORE
 				auto sHiScore = std::to_string(nHiScore);
-				DrawString((float)ScreenWidth() * 0.44f, (float)ScreenHeight() * 0.95f, "HI SCORE: " + std::to_string(nHiScore), olc::DARK_GREY);
+				DrawString((float)ScreenWidth() * 0.41f, (float)ScreenHeight() * 0.95f, "HI SCORE: " + std::to_string(nHiScore), olc::DARK_GREY);
 
-				//BOSS BAR
-				if (bBoss) 
+				//Wave
+
+				if(!bStart)DrawString((float)ScreenWidth() * 0.47f, (float)ScreenHeight() * 0.02f, "WAVE:" + std::to_string(nWave+1), olc::DARK_GREY);
+			
+				//TIMER
+				if(bGame && !bStart)
 				{
-					DrawString((float)ScreenWidth() * 0.288f, (float)ScreenHeight() * 0.875f, "BOSS: ", olc::DARK_RED);
-					FillRect((float)ScreenWidth() * 0.36f, (float)ScreenHeight() * 0.87f,(fBossHealth / 100 * 500), 10, olc::DARK_RED);
+					DrawString((float)ScreenWidth() * 0.47f, (float)ScreenHeight() * 0.05f, "TIME:", olc::DARK_GREY);
+					DrawString((float)ScreenWidth() * 0.48f, (float)ScreenHeight() * 0.082f, std::to_string((int)(nMaxLevelTime - fTimer)), ((nMaxLevelTime - fTimer)<20) ? magicPixel : olc::DARK_GREY, 2U);
 				}
+
+			
 
 				// ====WIN===
 				if (listSpawns.empty() && listEnemy.empty() && bGame)
-				{
+				{	
+					bWin = true;
 					bBoss = false;
-					fCounter += fElapsedTime;
-					if (fCounter > 3.5f)
+					if(!bPause)fCounter += fElapsedTime;
+					if (!bPause)DrawString((float)ScreenWidth() * 0.28f, (float)ScreenHeight() * 0.22f, "TIME BONUS: " + std::to_string((int)(nMaxLevelTime - fTimer) * 50), olc::GREY, 2U);
+
+					if (fCounter > 1.0f)
 					{
-						fWorldSpeed = 10.0f;
-						if(!bPause)DrawString((float)ScreenWidth() * 0.42f, (float)ScreenHeight() * 0.42f, "YOU WIN!", olc::WHITE, 2U);
+						if(!bPause)DrawString((float)ScreenWidth() * 0.4225f, (float)ScreenHeight() * 0.32f, "WAVE: " + std::to_string(nWave+2) , olc::WHITE, 2U);
+						if (!bPause)DrawString((float)ScreenWidth() * 0.43f, (float)ScreenHeight() * 0.5f, "GO!>>", magicPixel, 3U);
+						DrawString((float)ScreenWidth() * 0.48f, (float)ScreenHeight() * 0.66f, std::to_string( 4 - (int)fCounter), magicPixel, 3U);
+						if (fCounter > 5) 
+							{
+							nWave++;
+								dWorldPos = 0; 
+								SpawnLevel(nWave);
+								fCounter = 0.0f;
+								for (auto& p : listPlayers) {
+									p.nScore += (int)(nMaxLevelTime - fTimer) * 50;
+								}
+								fTimer = 0;
+								bWin = false;
+							}
+						
 					}
 				}
+				//=====TIMEOUT=====
+
+				bTimeOut = (fTimer > nMaxLevelTime);
+
 				//  ===LOSE===
-				if (listPlayers.empty() && !bStart)
+				if ((listPlayers.empty() && !bStart) || bTimeOut)
 				{
+					bWin = false;
+					bBoss = false;
+					bPlayer1 = false;
+					bPlayer2 = false;
 					bGame = false;
-					fWorldSpeed = 10.0f;
+					fWorldSpeed = 30.0f;
+					listEnemy.clear();
+					listSpawns.clear();
 					fCounter += fElapsedTime;
-					if(fCounter > 1.5f)    DrawString((float)ScreenWidth() * 0.385f, (float)ScreenHeight() * 0.42f, "GAME OVER", olc::WHITE, 2U);
-					if (fCounter > 5) restart();
+					if (fCounter > 1.5f) {
+						if (GetKey(olc::ESCAPE).bPressed)restart();
+						if (GetKey(olc::ENTER).bPressed) fCounter += 1;
+						DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.32f, (bTimeOut) ? "TIME OUT" : "GAME OVER", olc::WHITE, 2U);
+						DrawString((float)ScreenWidth() * 0.46f, (float)ScreenHeight() * 0.42f, "CONTINUE?", olc::WHITE, 1U);
+						DrawString((float)ScreenWidth() * 0.49f, (float)ScreenHeight() * 0.5f, std::to_string((int)(10-fCounter)), olc::WHITE, 4U);
+					
+						if (GetKey(olc::SPACE).bPressed && !bPlayer1)
+						{
+							Player* player = new Player(1);
+							listPlayers.push_back(*player);
+							bPlayer1 = true;
+							bGame = true;
+							fCounter = 0.0f;
+							fTimer = 0;
+							bTimeOut = false;
+							dWorldPos = 0;
+							listSpawns = listSpawnsBkp;
+						}
+
+						if (GetMouse(0).bPressed && !bPlayer2)
+						{
+							Player* player = new Player(2);
+							listPlayers.push_back(*player);
+							bPlayer2 = true;
+							bGame = true;
+							fCounter = 0.0f;
+							fTimer = 0;
+							bTimeOut = false;
+							dWorldPos = 0;
+							listSpawns = listSpawnsBkp;
+
+						}
+							
+							if (fCounter > 10)	restart();
+					}
+			
+				}
+
+				///..............DEBUG
+				/*
+				for (auto p : listPlayers) {
+					DrawString((float)ScreenWidth() * 0.3f, (float)ScreenHeight() * 0.5f, "Player1:\GetX = " + std::to_string(p.pos.x) + "\nWorldSpeed = " + std::to_string(fWorldSpeed));
 				}
 				
+				for (auto p : listPlayers) {
+					//DrawLine(p.pos.x, p.pos.y, p.vInput.x, p.vInput.y, olc::GREEN);
+					//DrawLine(p.pos.x, p.pos.y, p.vFinalVel.x, p.vFinalVel.y, olc::RED);
+					DrawLine(p.pos.x, p.pos.y, p.vInput.x, p.vInput.y, olc::BLUE);
+					DrawString((float)ScreenWidth() * 0.3f, (float)ScreenHeight() * 0.3f, "Velocity:\nX = " + std::to_string(p.vel.x) + "\nY = " + std::to_string(p.vel.y));
+				}
+				*/
+				
+
+				//===========MENU============
 				if (bPause)
 				{
-					if (!bInfoPanel) 
+					if (bMainMenu) 
 					{
-						if(!bStart)DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.28f, "PAUSE!", olc::WHITE, 3U);
+						DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.28f, (bStart) ? "MAIN MENU" : "PAUSE!", olc::WHITE, 3U);
 
-						DrawString((float)ScreenWidth() * 0.43f, (float)ScreenHeight() * 0.42f, "Resume", (bResume) ? magicPixel : olc::DARK_GREY, 2U);
-						DrawString((float)ScreenWidth() * 0.43f, (float)ScreenHeight() * 0.52f, "Restart", (bRestart) ? magicPixel : olc::DARK_GREY, 2U);
-						DrawString((float)ScreenWidth() * 0.43f, (float)ScreenHeight() * 0.62f, "Controls", (bInfo) ? magicPixel : olc::DARK_GREY, 2U);
-						DrawString((float)ScreenWidth() * 0.43f, (float)ScreenHeight() * 0.72f, "Quit", (bQuit) ? magicPixel : olc::DARK_GREY, 2U);
+						DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.42f, "Resume", (bResume) ? magicPixel : olc::DARK_GREY, 2U);
+						DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.52f, "Restart", (bRestart) ? magicPixel : olc::DARK_GREY, 2U);
+						DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.62f, "Options", (bOptions) ? magicPixel : olc::DARK_GREY, 2U);
+						DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.72f, "Quit", (bQuit) ? magicPixel : olc::DARK_GREY, 2U);
+					}
+					if (bOptionsMenu)
+					{
+						DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.28f, "OPTIONS", olc::WHITE, 3U);
+
+						DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.42f, "Controls", (bInfo) ? magicPixel : olc::DARK_GREY, 2U);
+						DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.52f, "Sounds", (bSounds) ? magicPixel : olc::DARK_GREY, 2U);
+						DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.72f, "Back", (bBack) ? magicPixel : olc::DARK_GREY, 2U);
 					}
 					if (bInfoPanel)
 					{
-						DrawString((float)ScreenWidth() * 0.35f, (float)ScreenHeight() * 0.18f, "CONTROLS", olc::DARK_GREY, 3U);
-						DrawString((float)ScreenWidth() * 0.13f, (float)ScreenHeight() * 0.34f, "PLAYER1", olc::DARK_GREY, 2U);
-						DrawString((float)ScreenWidth() * 0.08f, (float)ScreenHeight() * 0.44f, "W, S, A, D = Movement \n\nSPACE = Fire", olc::DARK_GREY);
 
-						DrawString((float)ScreenWidth() * 0.63f, (float)ScreenHeight() * 0.34f, "PLAYER2", olc::DARK_GREY, 2U);
-						DrawString((float)ScreenWidth() * 0.58f, (float)ScreenHeight() * 0.44f, "ARROW KEYS = Movement \n\nNUM 0 = Fire", olc::DARK_GREY);
+						DrawString((float)ScreenWidth() * 0.37f, (float)ScreenHeight() * 0.18f, "CONTROLS", olc::GREY, 3U);
+						DrawString((float)ScreenWidth() * 0.13f, (float)ScreenHeight() * 0.34f, "PLAYER1", olc::DARK_GREY, 2U);
+						DrawString((float)ScreenWidth() * 0.08f, (float)ScreenHeight() * 0.44f, "W,S,A,D = Movement \n\nSPACE = Fire \n\n1, 2, 3 = Select Spells \n\nALT = Cast Spell", olc::DARK_GREY);
+
+						DrawString((float)ScreenWidth() * 0.68f, (float)ScreenHeight() * 0.34f, "PLAYER2", olc::DARK_GREY, 2U);
+						DrawString((float)ScreenWidth() * 0.61f, (float)ScreenHeight() * 0.44f, "ARROW KEYS = Movement \n\nLEFT MOUSE BUTTON = Fire \n\nDEL, END, PGDN = Select Spells \n\nRIGHT MOUSE BUTTON = Cast Spell", olc::DARK_GREY);
+
+						DrawString((float)ScreenWidth() * 0.46f, (float)ScreenHeight() * 0.72f, "Back", (bBack) ? magicPixel : olc::DARK_GREY, 2U);
+					}
+					if(bSoundPanel)
+					{
+						DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.28f, "SOUNDS", olc::WHITE, 3U);
+
+						DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.42f, "Volume", (bVolume) ? magicPixel : olc::DARK_GREY, 2U);
+						DrawString((float)ScreenWidth() * 0.56f, (float)ScreenHeight() * 0.42f, std::to_string(nVolumeLvl * 10) + "%", (bVolume) ? magicPixel : olc::DARK_GREY, 2U);
+						DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.52f, "Music", (bMusic) ? magicPixel : olc::DARK_GREY, 2U);
+						DrawString((float)ScreenWidth() * 0.55f, (float)ScreenHeight() * 0.52f, (bMusicON) ? "ON" : "OFF", (bMusic) ? magicPixel : olc::DARK_GREY, 2U);
+
+						DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.72f, "Back", (bBack) ? magicPixel : olc::DARK_GREY, 2U);
 					}
 				}
 		return true;
@@ -879,7 +1357,7 @@ public:
 int main()
 {
 	SHUMP demo;
-	if (demo.Construct(640, 320, 3, 3, true))
+	if (demo.Construct(700, 350, 2, 2, true))
 		demo.Start();
 	return 0;
 }

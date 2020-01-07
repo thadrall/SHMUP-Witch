@@ -384,7 +384,7 @@ namespace olc // All OneLoneCoder stuff will now exist in the "olc" namespace
 		F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
 		UP, DOWN, LEFT, RIGHT,
 		SPACE, TAB, SHIFT, CTRL, INS, DEL, HOME, END, PGUP, PGDN,
-		BACK, ESCAPE, RETURN, ENTER, PAUSE, SCROLL,
+		BACK, ESCAPE, RETURN, ENTER, ALT, PAUSE, SCROLL,
 		NP0, NP1, NP2, NP3, NP4, NP5, NP6, NP7, NP8, NP9,
 		NP_MUL, NP_DIV, NP_ADD, NP_SUB, NP_DECIMAL,
 	};
@@ -2051,7 +2051,8 @@ namespace olc
 	{
 		WNDCLASS wc;
 		wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+		//LoadCursorFromFile("art/claw.cur");
+		wc.hCursor = LoadCursorFromFile("art/claw.cur");//LoadCursor(NULL, IDC_ARROW);
 		wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 		wc.hInstance = GetModuleHandle(nullptr);
 		wc.lpfnWndProc = olc_WindowEvent;
@@ -2123,7 +2124,7 @@ namespace olc
 		mapKeys[VK_F9] = Key::F9; mapKeys[VK_F10] = Key::F10; mapKeys[VK_F11] = Key::F11; mapKeys[VK_F12] = Key::F12;
 
 		mapKeys[VK_DOWN] = Key::DOWN; mapKeys[VK_LEFT] = Key::LEFT; mapKeys[VK_RIGHT] = Key::RIGHT; mapKeys[VK_UP] = Key::UP;
-		mapKeys[VK_RETURN] = Key::ENTER; //mapKeys[VK_RETURN] = Key::RETURN;
+		mapKeys[VK_RETURN] = Key::ENTER; mapKeys[0x12] = Key::ALT; //mapKeys[VK_RETURN] = Key::RETURN; 
 
 		mapKeys[VK_BACK] = Key::BACK; mapKeys[VK_ESCAPE] = Key::ESCAPE; mapKeys[VK_RETURN] = Key::ENTER; mapKeys[VK_PAUSE] = Key::PAUSE;
 		mapKeys[VK_SCROLL] = Key::SCROLL; mapKeys[VK_TAB] = Key::TAB; mapKeys[VK_DELETE] = Key::DEL; mapKeys[VK_HOME] = Key::HOME;
