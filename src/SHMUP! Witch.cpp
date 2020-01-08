@@ -1327,7 +1327,7 @@ public:
 int main()
 {
 	SHUMP demo;
-	if (demo.Construct(700, 350, 2, 2, false))
+	if (demo.Construct(700, 350, 2, 2, true, true))
 		demo.Start();
 	return 0;
 }
