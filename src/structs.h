@@ -1,3 +1,7 @@
+/*========================================
+		Structs and definitions
+=========================================*/
+
 #pragma once
 
 olc::Sprite* sprPlayer[2];
@@ -59,8 +63,6 @@ public:
 	bool bInput = false;
 	olc::vf2d vFinalVel;
 
-	
-
 	//Fire
 	float fGunReloadTimer;
 	float fFireRate;
@@ -75,8 +77,7 @@ public:
 
 	//Shield
 	float fProtectionTimer;
-	float fCooldown; //<--???
-
+	float fShieldDuration;
 	bool bIsProtected;
 
 	//Mana
@@ -85,10 +86,10 @@ public:
 	float fManaRegeneration;
 
 	//Spells
-
 	bool bSpecial; 
 	float fSpecialManaCost;
-	float fSpecialCooldown;
+	float fSpecialTimer;
+	float fSpeciallCooldown;
 	bool bSpecialReady;
 	std::list<sSpell> listPlayerSpell;
 
@@ -98,10 +99,8 @@ public:
 	float fBoostBuffor;
 	std::list<sBoost>listPlayerBoost;
 
-
 	//Animations counter
 	float fAnimationFrame;
-
 
 
 	Player(uint32_t ID)
@@ -113,13 +112,14 @@ public:
 		fInputSens = 7;
 		fGunReloadTimer = 0.0f;
 		fBulletSpeed = 700;
-		fCooldown = 2.5f;
+		fShieldDuration = 2.5f;
 		fMana = 50.0f;
 		fMaxMana = 100.0f;
 		fManaRegeneration = 3;
+		fSpeciallCooldown = 1;
 		fSpecialManaCost = 20.0f;
 		fProtectionTimer = 0.0f;
-		fFireRate = 0.09f;
+		fFireRate = 0.05f;
 		bIsFire = false;
 		bCanFire = false;
 		bIsProtected = true;
@@ -136,6 +136,7 @@ public:
 
 	olc::vf2d GetPos(){ return pos; }
 };
+
 struct sAnimation {
 
 	float fTimer = 0.0f;
@@ -196,6 +197,8 @@ struct sSpell
 	olc::vf2d vel;
 	bool bReady = false;
 	float fCounter = 0.0f;
+	float fSpellSpeed = 420;
+	float fSpellCooldown = 0.03f;
 
 };
 

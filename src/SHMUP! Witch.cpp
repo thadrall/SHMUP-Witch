@@ -70,6 +70,7 @@ public:
 	bool bTimeOut = false;
 	int nVolumeLvl = 5;
 
+	//UI
 	int nLastHiScore;
 	int nHiScore = 0;
 	float fTimer = 0;
@@ -90,7 +91,6 @@ public:
 	sBoost boostFire;
 
 	//ANIMATIONS
-
 	sAnimation aSpecialP1;
 	sAnimation aSpecialP2;
 
@@ -101,10 +101,10 @@ public:
 	sEnemyDefinition sMoon;
 	sEnemyDefinition sWitch;
 
-
-	
+	//LEVEL
 	bool bFirstSpawn = true;
 	int nWave = 0;
+
 	//FUNCTIONS
 
 	void SpawnLevel(int nWave, int nPumpkins = 5, int nBats = 30, int nGhost = 2, int nWitch = 1, int nLevelDistance = 600) 
@@ -239,6 +239,22 @@ public:
 			listDrops.push_back(d);
 		}
 	}
+	void loseLife(Player& p)
+	{
+		if (p.fMana >= p.fMaxMana / 2)p.fMana -= p.fMaxMana / 2;
+		else p.nLives--;
+		SoundEngine->play2D("art/sounds/loose.wav", GL_FALSE);
+		if (p.nLives <= 0)
+		{
+			Explode(p, p.pos, 1000);
+			if (p.nPlayerID == 1) { bPlayer1 = false; nBuffScore1 = p.nScore; }
+			if (p.nPlayerID == 2) { bPlayer2 = false; nBuffScore2 = p.nScore; }
+			p.bDead = true;
+			SoundEngine->play2D("art/sounds/explode.wav", GL_FALSE);
+		}
+		p.bIsProtected = true;
+		p.fProtectionTimer = 0.0f;
+	}
 
 
 	//==============================================================CREATE=========================================================
@@ -366,7 +382,7 @@ public:
 		for (int i = 0; i < arySky.size(); i++)
 		{
 			auto& s = arySky[i];
-			s.x = 514 * i;
+			s.x = sprSky[i%2]->width * i;
 			s.y =  0;
 		}
 
@@ -374,7 +390,7 @@ public:
 		for (int i = 0; i < aryMountains.size(); i++)
 		{
 			auto& m = aryMountains[i];
-			m.x = 1600 * i;
+			m.x = sprMountains[i]->width * i;
 			m.y = 0;
 		}
 
@@ -391,35 +407,35 @@ public:
 
 		//			ENEMY  MODELS
 		
-
+		//Pumpkin
 		sPumpkin.nSpriteID = 0;
 		sPumpkin.nEnemyLives = 2;
 		sPumpkin.funcMove = Move_None;
 		sPumpkin.funcFire = Fire_Triple;
 		sPumpkin.nDropRate = 10;
 		sPumpkin.nScore = 200;
-		
+		//Bat
 		sBat.nSpriteID = 4;
 		sBat.nEnemyLives = 1;
 		sBat.funcMove = Move_Bat;
 		sBat.funcFire = Fire_None;
 		sBat.nDropRate = 5;
 		sBat.nScore = 50;
-		
+		//Ghost
 		sGhost.nSpriteID = 1;
 		sGhost.nEnemyLives = 4;
 		sGhost.funcMove = Move_Sin;
 		sGhost.funcFire = Fire_Straight;
 		sGhost.nDropRate = 20;
 		sGhost.nScore = 300;
-
+		//Witch
 		sWitch.nSpriteID = 2;
 		sWitch.nEnemyLives = 2;
 		sWitch.funcMove = Move_Sin_Fast;
 		sWitch.funcFire = Fire_Fast;
 		sWitch.nDropRate = 50;
 		sWitch.nScore = 500;
-
+		//Moon
 		sMoon.nSpriteID = 3;
 		sMoon.nEnemyLives = 50;
 		sMoon.funcMove = Move_Moon;
@@ -557,7 +573,9 @@ public:
 				p.vInput += p.vel * fElapsedTime;
 				p.pos += p.vel * fElapsedTime;
 				
-
+				//Update global pos
+				if (p.nPlayerID == 1)fP1pos = p.pos.x;
+				else fP2pos = p.pos.x;
 
 				//CLAMP
 				if (p.pos.x <= 0) p.pos.x = 0;
@@ -625,10 +643,10 @@ public:
 						sSpell s;
 						s.pos = { p.pos.x + (float)sprPlayer[p.nPlayerID - 1]->width, p.pos.y - 15 };
 						if (s.pos.y <= 1) s.pos.y = 1;
-						s.vel = { 400.0f, 0.0f };
-						p.listPlayerSpell.push_back(s);
+						s.vel = { s.fSpellSpeed, 0.0f };
 						p.fMana -= p.fSpecialManaCost;
 						p.bSpecialReady = false;
+						p.listPlayerSpell.push_back(s);
 						if (p.nPlayerID == 1) SoundEngine->play2D("art/sounds/warp.wav", GL_FALSE);
 						else SoundEngine->play2D("art/sounds/electricShock.wav", GL_FALSE);
 					}
@@ -638,7 +656,7 @@ public:
 					{
 						s.pos += (s.vel - olc::vf2d(fWorldSpeed, 0.0f)) * fElapsedTime;
 						s.fCounter += fElapsedTime;
-						if (s.fCounter > 0.08f) {
+						if (s.fCounter > s.fSpellCooldown) {
 							s.fCounter = 0.0f;
 							s.bReady = true;
 						}
@@ -647,19 +665,19 @@ public:
 							if (((s.pos + GetMiddle(aSpecialP1.playAnimation(fElapsedTime))) - (e.pos + GetMiddle(sprEnemy[e.def.nSpriteID]))).mag() < ((float)sprEnemy[e.def.nSpriteID]->width + (float)aSpecialP1.playAnimation(fElapsedTime)->width) / 2.0f && s.bReady)
 							{
 								e.def.nEnemyLives--;
-								if (p.nPlayerID == 1)SoundEngine->play2D("art/sounds/zap.wav", GL_FALSE);
-								else SoundEngine->play2D("art/sounds/zap.mp3", GL_FALSE);
 								Explode(p, s.pos, 8);
 								sSplash sp;
 								sp.pos = e.pos;
 								sp.nID = p.nPlayerID;
 								sp.fCounter = 0.0f;
 								listSplash.push_back(sp);
-								s.bReady = false;
+								if (p.nPlayerID == 1)SoundEngine->play2D("art/sounds/zap.wav", GL_FALSE);
+								else SoundEngine->play2D("art/sounds/zap.mp3", GL_FALSE);
 								if (e.def.nEnemyLives <= 0)
 								{
 									kill(e, p);
 								}
+								s.bReady = false;
 							}
 						}
 					}
@@ -698,28 +716,27 @@ public:
 							}
 							
 							if(b.nBoostID == 1){
-							for (auto& e : listEnemy)
-							{
-								if (((p.pos + b.offset) - (e.pos + GetMiddle(sprEnemy[e.def.nSpriteID]))).mag() < ((float)sprEnemy[e.def.nSpriteID]->width + (float)sprBoost[0]->width) / 2.2f && b.bReady)
+								for (auto& e : listEnemy)
 								{
-									e.def.nEnemyLives--;
-									SoundEngine->play2D("art/sounds/zap.wav", GL_FALSE);
-									Explode(p, (p.pos + b.offset * 1.5f + GetMiddle(sprBoost[0])), 8);
-									sSplash s;
-									s.pos = (p.pos + b.offset * 1.5f);
-									s.nID = p.nPlayerID;
-									s.fCounter = 0.0f;
-									listSplash.push_back(s);
-									b.bReady = false;
-									if (e.def.nEnemyLives <= 0)
+									if (((p.pos + b.offset) - (e.pos + GetMiddle(sprEnemy[e.def.nSpriteID]))).mag() < ((float)sprEnemy[e.def.nSpriteID]->width + (float)sprBoost[0]->width) / 2.2f && b.bReady)
 									{
-										kill(e, p);
+										e.def.nEnemyLives--;
+										SoundEngine->play2D("art/sounds/zap.wav", GL_FALSE);
+										Explode(p, (p.pos + b.offset * 1.5f + GetMiddle(sprBoost[0])), 8);
+										sSplash s;
+										s.pos = (p.pos + b.offset * 1.5f);
+										s.nID = p.nPlayerID;
+										s.fCounter = 0.0f;
+										listSplash.push_back(s);
+										b.bReady = false;
+										if (e.def.nEnemyLives <= 0)
+										{
+											kill(e, p);
+										}
 									}
 								}
 							}
-							}
 
-							//Explode(p, p.pos, 1, {-18, 30});
 							b.fBoostCounter += fElapsedTime;
 							if (b.fBoostCounter >= b.fDuration || p.fMana <= 1 || !p.bActiveSpecial)
 							{
@@ -737,20 +754,17 @@ public:
 					p.listPlayerBoost.remove_if([&](const sBoost& b) {return b.bRemove; });
 				
 				//COUNTERS
-					if (p.nPlayerID == 1)fP1pos = p.pos.x;
-					else fP2pos = p.pos.x;
-
-				p.fGunReloadTimer += fElapsedTime * 0.5f;
+				p.fGunReloadTimer += fElapsedTime;
 				if (p.fGunReloadTimer >= p.fFireRate)
 				{
 					p.fGunReloadTimer -= p.fFireRate;
 					p.bCanFire = true;
 				}
 
-				p.fSpecialCooldown += fElapsedTime;
-				if (p.fSpecialCooldown >= 2.0f)
+				p.fSpecialTimer += fElapsedTime;
+				if (p.fSpecialTimer >= p.fSpeciallCooldown)
 				{
-					p.fSpecialCooldown = 0.0f;
+					p.fSpecialTimer = 0.0f;
 					p.bSpecialReady = true;
 				}
 
@@ -758,7 +772,7 @@ public:
 				if (p.fMana >= p.fMaxMana) p.fMana = p.fMaxMana;
 
 				p.fProtectionTimer += fElapsedTime;
-				if (p.fProtectionTimer >= p.fCooldown)
+				if (p.fProtectionTimer >= p.fShieldDuration)
 				{
 					p.bIsProtected = false;
 				}
@@ -773,7 +787,7 @@ public:
 			//World Speed
 			if (bPlayer1 && bPlayer2) {
 				float fMiddlePoint = (fP1pos > fP2pos) ? fP1pos - (fP1pos - fP2pos)/2 : fP2pos - (fP2pos - fP1pos)/2;
-				fWorldSpeed = (fMiddlePoint > (float)ScreenWidth() * 0.5f) ? fMiddlePoint / 2 + 50 : fMiddlePoint / 3 + 80;
+				fWorldSpeed = (fMiddlePoint > (float)ScreenWidth() * 0.5f) ? fMiddlePoint / 2 + 70 : fMiddlePoint / 3 + 100;
 			}
 			else if (bPlayer1)fWorldSpeed = (fP1pos > (float)ScreenWidth() * 0.5f) ? fP1pos / 2 + 70 : fP1pos / 3 + 100;
 			else if(bPlayer2)fWorldSpeed = (fP2pos > (float)ScreenWidth() * 0.5f) ? fP2pos / 2 + 70 : fP2pos / 3 + 100;
@@ -786,11 +800,9 @@ public:
 			for (auto& f : listFragmentsPlayer1) f.pos += (f.vel - olc::vf2d(fWorldSpeed, 0.0f)) * fElapsedTime;
 			for (auto& f : listFragmentsPlayer2) f.pos += (f.vel - olc::vf2d(fWorldSpeed, 0.0f)) * fElapsedTime;
 
-
 			listFragments.remove_if([&](const sBullet& b) {return b.pos.x < 0.0f || b.pos.y < 0.0f || b.pos.x >(float)ScreenWidth() || b.pos.y >(float)ScreenHeight() || b.bRemove; });
 			listFragmentsPlayer1.remove_if([&](const sBullet& b) {return b.pos.x < 0.0f || b.pos.y < 0.0f || b.pos.x >(float)ScreenWidth() || b.pos.y >(float)ScreenHeight() || b.bRemove; });
 			listFragmentsPlayer2.remove_if([&](const sBullet& b) {return b.pos.x < 0.0f || b.pos.y < 0.0f || b.pos.x >(float)ScreenWidth() || b.pos.y >(float)ScreenHeight() || b.bRemove; });
-
 
 
 	//=============== Enemies ==================
@@ -817,29 +829,14 @@ public:
 				for (auto& p : listPlayers)
 				{
 					if ((p.pos - e.pos).mag() < (vNearestPlayer - e.pos).mag()) vNearestPlayer = p.pos;
-
 				}
 				e.Update(fElapsedTime, fWorldSpeed, listEnemyBullet, vNearestPlayer);
-				if (e.def.nSpriteID == 3) fBossHealth = e.def.nEnemyLives;  //add bBoss to definition
+				if (e.def.bBoos) fBossHealth = e.def.nEnemyLives; 
 				for (auto& p : listPlayers)
 				{
 					if (((e.pos + GetMiddle(sprEnemy[e.def.nSpriteID])) - (p.pos + GetMiddle(sprPlayer[p.nPlayerID - 1]))).mag() < (float)sprPlayer[p.nPlayerID - 1]->width / 1.95f && !p.bIsProtected)
 					{
-						// make Lose Life function !!!!!!!!!!!!!!!!!!!
-						if (p.fMana >= p.fMaxMana/2)p.fMana -= p.fMaxMana / 2;
-						else p.nLives--; 
-						SoundEngine->play2D("art/sounds/loose.wav", GL_FALSE);
-						if (p.nLives <= 0)
-						{
-							Explode(p, p.pos, 1000);
-							if (p.nPlayerID == 1) { bPlayer1 = false; nBuffScore1 = p.nScore; }
-							if (p.nPlayerID == 2) { bPlayer2 = false; nBuffScore2 = p.nScore;
-							}
-							p.bDead = true;
-							SoundEngine->play2D("art/sounds/explode.wav", GL_FALSE);
-						}
-						p.bIsProtected = true;
-						p.fProtectionTimer = 0.0f;
+						loseLife(p);
 					}
 				}
 			};
@@ -852,21 +849,8 @@ public:
 				{
 					if (((b.pos + GetMiddle(sprEnemyBullet[b.nBulletTypeID])) - (p.pos + GetMiddle(sprPlayer[p.nPlayerID - 1]))).mag() < (float)sprPlayer[p.nPlayerID - 1]->width / 2.2f && !p.bIsProtected)
 					{
-						// make Lose Life function !!!!!!!!!!!!!!!!!!!
 						b.bRemove = true;
-						if (p.fMana >= p.fMaxMana / 2)p.fMana -= p.fMaxMana / 2;
-						else p.nLives--;
-						SoundEngine->play2D("art/sounds/loose.wav", GL_FALSE);
-						if (p.nLives <= 0)
-						{
-							Explode(p, p.pos, 1000);
-							if (p.nPlayerID == 1){ bPlayer1 = false; nBuffScore1 = p.nScore;}
-							if (p.nPlayerID == 2){ bPlayer2 = false; nBuffScore2 = p.nScore;}
-							p.bDead = true;
-							SoundEngine->play2D("art/sounds/explode.wav", GL_FALSE);
-						}
-						p.bIsProtected = true;
-						p.fProtectionTimer = 0.0f;
+						loseLife(p);
 					}
 				}
 
@@ -1284,20 +1268,6 @@ public:
 					}
 			
 				}
-
-				///..............DEBUG
-				/*
-				for (auto p : listPlayers) {
-					DrawString((float)ScreenWidth() * 0.3f, (float)ScreenHeight() * 0.5f, "Player1:\GetX = " + std::to_string(p.pos.x) + "\nWorldSpeed = " + std::to_string(fWorldSpeed));
-				}
-				
-				for (auto p : listPlayers) {
-					//DrawLine(p.pos.x, p.pos.y, p.vInput.x, p.vInput.y, olc::GREEN);
-					//DrawLine(p.pos.x, p.pos.y, p.vFinalVel.x, p.vFinalVel.y, olc::RED);
-					DrawLine(p.pos.x, p.pos.y, p.vInput.x, p.vInput.y, olc::BLUE);
-					DrawString((float)ScreenWidth() * 0.3f, (float)ScreenHeight() * 0.3f, "Velocity:\nX = " + std::to_string(p.vel.x) + "\nY = " + std::to_string(p.vel.y));
-				}
-				*/
 				
 
 				//===========MENU============
@@ -1357,7 +1327,7 @@ public:
 int main()
 {
 	SHUMP demo;
-	if (demo.Construct(700, 350, 2, 2, true))
+	if (demo.Construct(700, 350, 2, 2, false))
 		demo.Start();
 	return 0;
 }
