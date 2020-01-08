@@ -119,7 +119,7 @@ public:
 		fSpeciallCooldown = 1;
 		fSpecialManaCost = 20.0f;
 		fProtectionTimer = 0.0f;
-		fFireRate = 0.05f;
+		fFireRate = 0.17f;
 		bIsFire = false;
 		bCanFire = false;
 		bIsProtected = true;

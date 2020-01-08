@@ -24,9 +24,6 @@
     <ClInclude Include="src\olcPixelGameEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\olcPGEX_Sound.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\SHMUP! Witch.cpp">

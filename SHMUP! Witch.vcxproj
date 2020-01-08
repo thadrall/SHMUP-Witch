@@ -143,7 +143,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\olcPGEX_Sound.h" />
     <ClInclude Include="src\patherns.h" />
     <ClInclude Include="src\olcPixelGameEngine.h" />
     <ClInclude Include="src\structs.h" />
