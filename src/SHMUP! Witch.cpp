@@ -1,4 +1,5 @@
 #define OLC_PGE_APPLICATION
+#define VERSION() std::string("v0.02a")
 #include "olcPixelGameEngine.h"
 #include "patherns.h"
 #include <array>
@@ -68,7 +69,7 @@ public:
 	bool bMusicON = true;
 	bool bWin;
 	bool bTimeOut = false;
-	int nVolumeLvl = 5;
+	int nVolumeLvl = 0;
 
 	//UI
 	int nLastHiScore;
@@ -103,33 +104,33 @@ public:
 
 	//LEVEL
 	bool bFirstSpawn = true;
-	int nWave = 0;
+	int nWave = 1;
 
 	//FUNCTIONS
 
-	void SpawnLevel(int nWave, int nPumpkins = 5, int nBats = 30, int nGhost = 2, int nWitch = 1, int nLevelDistance = 600) 
+	void SpawnLevel(int nWave, int nPumpkins = 6, int nBats = 40, int nGhost = 1, int nWitch = 0, int nLevelDistance = 700) 
 	{
-			nLevelDistance += nWave * 50;
+			nLevelDistance += nWave * 100;
 			nMaxLevelTime += 5;
-			for (int i = 0; i < nPumpkins + nWave; i++)
+			for (int i = 0; i < nPumpkins + (int)(nWave * 1.5); i++)
 			{
 				sPumpkin.dTriggerTime = ((rand() % nLevelDistance/5) * 35 + i * 5)+1;
 				sPumpkin.fOffset = (2 + (rand() % 7)) * 0.1;
 				listSpawns.push_back(sPumpkin);
 			}
-			for (int i = 0; i < nBats + nWave * 5; i++)
+			for (int i = 0; i < nBats + nWave * 8; i++)
 			{
 				sBat.dTriggerTime = (rand() % nLevelDistance / 50) * 400 + i+1;
 				sBat.fOffset = (2 + (rand() % 7)) * 0.1;
 				listSpawns.push_back(sBat);
 			}
-			for (int i = 0; i < nGhost + (int)(nWave / 2); i++)
+			for (int i = 0; i < nGhost + (int)(nWave * 0.75); i++)
 			{
 				sGhost.dTriggerTime = (rand() % nLevelDistance / 5) * 40+1;
 				sGhost.fOffset = (2 + (rand() % 7)) * 0.1;
 				listSpawns.push_back(sGhost);
 			}
-			for (int i = 0; i < nWitch + (int)(nWave/4); i++)
+			for (int i = 0; i < nWitch + (int)(nWave * 0.5); i++)
 			{
 				sWitch.dTriggerTime = (rand() % nLevelDistance / 2) * 16+1;
 				sWitch.fOffset = (2 + (rand() % 7)) * 0.1;
@@ -138,7 +139,7 @@ public:
 			sMoon.dTriggerTime = nLevelDistance * 8;
 			sMoon.fOffset = 0.5f;
 			fBoosMax = 20 + nWave * 10;
-			sMoon.nEnemyLives = 20 + nWave * 10;
+			sMoon.nEnemyLives = 30 + nWave * 10;
 			sMoon.bBoos = true;
 			listSpawns.push_back(sMoon);
 			listSpawns.sort([](const sEnemyDefinition& enemy1, const sEnemyDefinition& enemy2)
@@ -213,7 +214,7 @@ public:
 		bPlayer1 = false;
 		bPlayer2 = false;
 		bBoss = false;
-		nWave = 0;
+		nWave = 1;
 		vSkyPos.x = 0;
 		fCounter = 0.0f;
 		fTimer = 0;
@@ -241,7 +242,7 @@ public:
 	}
 	void loseLife(Player& p)
 	{
-		if (p.fMana >= p.fMaxMana / 2)p.fMana -= p.fMaxMana / 2;
+		if (p.fMana >= p.fMaxMana / 2 && p.bBoostActive)p.fMana -= 50;
 		else p.nLives--;
 		SoundEngine->play2D("art/sounds/loose.wav", GL_FALSE);
 		if (p.nLives <= 0)
@@ -602,7 +603,7 @@ public:
 				{
 					sBullet b;
 					b.pos = { p.pos.x + (float)sprPlayer[p.nPlayerID - 1]->width, p.pos.y + (float)sprPlayer[p.nPlayerID - 1]->height / 3 };
-					b.vel = p.vel + olc::vf2d {p.fBulletSpeed, -p.vel.y * 0.3f};
+					b.vel = p.vel * 0.8 + olc::vf2d {p.fBulletSpeed, -p.vel.y * 0.35f};
 					b.nBulletTypeID = 0;
 					p.listPlayerBullet.push_back(b);
 					p.bCanFire = false;
@@ -646,6 +647,7 @@ public:
 						s.vel = { s.fSpellSpeed, 0.0f };
 						p.fMana -= p.fSpecialManaCost;
 						p.bSpecialReady = false;
+						p.fSpecialTimer = 0.0f;
 						p.listPlayerSpell.push_back(s);
 						if (p.nPlayerID == 1) SoundEngine->play2D("art/sounds/warp.wav", GL_FALSE);
 						else SoundEngine->play2D("art/sounds/electricShock.wav", GL_FALSE);
@@ -764,8 +766,8 @@ public:
 				p.fSpecialTimer += fElapsedTime;
 				if (p.fSpecialTimer >= p.fSpeciallCooldown)
 				{
-					p.fSpecialTimer = 0.0f;
 					p.bSpecialReady = true;
+					p.fSpecialTimer = 0.0f;
 				}
 
 				p.fMana += fElapsedTime * p.fManaRegeneration;
@@ -787,10 +789,10 @@ public:
 			//World Speed
 			if (bPlayer1 && bPlayer2) {
 				float fMiddlePoint = (fP1pos > fP2pos) ? fP1pos - (fP1pos - fP2pos)/2 : fP2pos - (fP2pos - fP1pos)/2;
-				fWorldSpeed = (fMiddlePoint > (float)ScreenWidth() * 0.5f) ? fMiddlePoint / 2 + 70 : fMiddlePoint / 3 + 100;
+				fWorldSpeed = (fMiddlePoint > (float)ScreenWidth() * 0.5f) ? fMiddlePoint / 2 + 80 : fMiddlePoint / 3 + 100;
 			}
-			else if (bPlayer1)fWorldSpeed = (fP1pos > (float)ScreenWidth() * 0.5f) ? fP1pos / 2 + 70 : fP1pos / 3 + 100;
-			else if(bPlayer2)fWorldSpeed = (fP2pos > (float)ScreenWidth() * 0.5f) ? fP2pos / 2 + 70 : fP2pos / 3 + 100;
+			else if (bPlayer1)fWorldSpeed = (fP1pos > (float)ScreenWidth() * 0.5f) ? fP1pos / 2 + 80 : fP1pos / 3 + 100;
+			else if(bPlayer2)fWorldSpeed = (fP2pos > (float)ScreenWidth() * 0.5f) ? fP2pos / 2 + 80 : fP2pos / 3 + 100;
 
 			//Sky
 			vSkyPos.x -= fElapsedTime * 5;
@@ -1008,9 +1010,9 @@ public:
 			Clear(olc::BLACK);
 		
 			//Blink
-			fBlinkCounter += fElapsedTime * 5;
-			float fMagic = (cosf(fBlinkCounter) + 1) * 2;
-			olc::Pixel magicPixel = olc::Pixel(fMagic * 40.0f + 60, fMagic * 40.0f + 60, fMagic * 40.0f + 60);
+			fBlinkCounter += fElapsedTime * 3;
+			float fMagic = abs(cosf(fBlinkCounter) * 255);
+			olc::Pixel magicPixel = olc::Pixel(fMagic, fMagic, fMagic);
 			
 				//Sky
 				for (size_t i = 0; i < arySky.size(); i++)
@@ -1121,7 +1123,7 @@ public:
 					}
 				}
 
-				//UI
+			//UI
 				for (auto& p : listPlayers) {
 					//offset
 					float offset = (p.nPlayerID - 1) ? 0.81f : 0.05f;
@@ -1155,11 +1157,11 @@ public:
 				//JOIN PLAYER 
 				if (!bPlayer1 && !bStart) {
 					DrawString((float)ScreenWidth() * 0.02f, (float)ScreenHeight() * 0.02f, "SCORE:" + std::to_string(nBuffScore1), olc::DARK_GREY, 1U);
-					if(bGame)DrawString((float)ScreenWidth() * 0.02f, (float)ScreenHeight() * 0.055f, "PRESS FIRE\n TO START!", olc::Pixel(fMagic * 20.0f + 60, fMagic * 20.0f + 60, fMagic * 20.0f + 60));
+					if(bGame)DrawString((float)ScreenWidth() * 0.02f, (float)ScreenHeight() * 0.055f, "PRESS FIRE\n TO START!", magicPixel * 0.5f);
 				}
 				if (!bPlayer2 && !bStart){
 					DrawString((float)ScreenWidth() * 0.82f, (float)ScreenHeight() * 0.02f, "SCORE:" + std::to_string(nBuffScore2), olc::DARK_GREY, 1U);
-					if (bGame)DrawString((float)ScreenWidth() * 0.82f, (float)ScreenHeight() * 0.055f, "PRESS FIRE\n TO START!", olc::Pixel(fMagic * 20.0f + 60, fMagic * 20.0f + 60, fMagic * 20.0f + 60));
+					if (bGame)DrawString((float)ScreenWidth() * 0.82f, (float)ScreenHeight() * 0.055f, "PRESS FIRE\n TO START!", magicPixel * 0.5f);
 				}
 	
 				//START
@@ -1167,7 +1169,7 @@ public:
 				{
 					DrawString((float)ScreenWidth() * 0.4f, (float)ScreenHeight() * 0.25f, "SHMUP!", olc::WHITE, 3U);
 					DrawString((float)ScreenWidth() * 0.36f, (float)ScreenHeight() * 0.38f, "WITCH", olc::WHITE, 5U);
-					DrawString((float)ScreenWidth() * 0.39f, (float)ScreenHeight() * 0.7f, "PRESS FIRE TO START...", olc::Pixel(fMagic * 40.0f + 80, fMagic * 40.0f + 80, fMagic * 40.0f + 80));
+					DrawString((float)ScreenWidth() * 0.39f, (float)ScreenHeight() * 0.7f, "PRESS FIRE TO START...", magicPixel * 0.7f);
 				}
 				//HI SCORE
 				auto sHiScore = std::to_string(nHiScore);
@@ -1175,15 +1177,18 @@ public:
 
 				//Wave
 
-				if(!bStart)DrawString((float)ScreenWidth() * 0.47f, (float)ScreenHeight() * 0.02f, "WAVE:" + std::to_string(nWave+1), olc::DARK_GREY);
+				if(!bStart)DrawString((float)ScreenWidth() * 0.47f, (float)ScreenHeight() * 0.02f, "WAVE:" + std::to_string(nWave), olc::DARK_GREY);
 			
 				//TIMER
 				if(bGame && !bStart)
 				{
 					DrawString((float)ScreenWidth() * 0.47f, (float)ScreenHeight() * 0.05f, "TIME:", olc::DARK_GREY);
-					DrawString((float)ScreenWidth() * 0.48f, (float)ScreenHeight() * 0.082f, std::to_string((int)(nMaxLevelTime - fTimer)), ((nMaxLevelTime - fTimer)<20) ? magicPixel : olc::DARK_GREY, 2U);
+					DrawString((float)ScreenWidth() * 0.48f, (float)ScreenHeight() * 0.082f, std::to_string((int)(nMaxLevelTime - fTimer)), ((nMaxLevelTime - fTimer)<20) ? olc::Pixel((int)(fMagic * 0.3),0, 0) : olc::DARK_GREY, 2U);
 				}
 
+				//VERSION
+				
+				DrawString((float)ScreenWidth() * 0.925f, (float)ScreenHeight() * 0.008f, VERSION(), olc::Pixel(30,30,30));
 			
 
 				// ====WIN===
@@ -1192,12 +1197,12 @@ public:
 					bWin = true;
 					bBoss = false;
 					if(!bPause)fCounter += fElapsedTime;
-					if (!bPause)DrawString((float)ScreenWidth() * 0.28f, (float)ScreenHeight() * 0.22f, "TIME BONUS: " + std::to_string((int)(nMaxLevelTime - fTimer) * 50), olc::GREY, 2U);
+					if (!bPause)DrawString((float)ScreenWidth() * 0.28f, (float)ScreenHeight() * 0.22f, "TIME BONUS: " + std::to_string((int)(nMaxLevelTime - fTimer) * 50), olc::DARK_RED, 2U);
 
 					if (fCounter > 1.0f)
 					{
-						if(!bPause)DrawString((float)ScreenWidth() * 0.4225f, (float)ScreenHeight() * 0.32f, "WAVE: " + std::to_string(nWave+2) , olc::WHITE, 2U);
-						if (!bPause)DrawString((float)ScreenWidth() * 0.43f, (float)ScreenHeight() * 0.5f, "GO!>>", magicPixel, 3U);
+						if(!bPause)DrawString((float)ScreenWidth() * 0.4225f, (float)ScreenHeight() * 0.32f, "WAVE: " + std::to_string(nWave+1) , olc::DARK_YELLOW, 2U);
+						if (!bPause)DrawString((float)ScreenWidth() * 0.43f, (float)ScreenHeight() * 0.5f, "GO!>>",olc::Pixel(0, (int)(fMagic * 0.6), 0), 3U);
 						DrawString((float)ScreenWidth() * 0.48f, (float)ScreenHeight() * 0.66f, std::to_string( 4 - (int)fCounter), magicPixel, 3U);
 						if (fCounter > 5) 
 							{

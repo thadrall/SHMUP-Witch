@@ -113,11 +113,11 @@ public:
 		fGunReloadTimer = 0.0f;
 		fBulletSpeed = 700;
 		fShieldDuration = 2.5f;
-		fMana = 50.0f;
+		fMana = 40.0f;
 		fMaxMana = 100.0f;
 		fManaRegeneration = 3;
 		fSpeciallCooldown = 1;
-		fSpecialManaCost = 20.0f;
+		fSpecialManaCost = 50.0f;
 		fProtectionTimer = 0.0f;
 		fFireRate = 0.17f;
 		bIsFire = false;
@@ -197,8 +197,8 @@ struct sSpell
 	olc::vf2d vel;
 	bool bReady = false;
 	float fCounter = 0.0f;
-	float fSpellSpeed = 420;
-	float fSpellCooldown = 0.03f;
+	float fSpellSpeed = 520;
+	float fSpellCooldown = 0.02f;
 
 };
 

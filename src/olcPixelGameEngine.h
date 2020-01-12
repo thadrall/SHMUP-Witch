@@ -232,6 +232,8 @@ namespace olc // All OneLoneCoder stuff will now exist in the "olc" namespace
 
 		bool operator==(const Pixel& p) const;
 		bool operator!=(const Pixel& p) const;
+		Pixel operator+(const Pixel& p) const;
+		Pixel operator*(const float f) const;
 	};
 
 	// Some constants for symbolic naming of Pixels
@@ -631,6 +633,38 @@ namespace olc
 	bool Pixel::operator!=(const Pixel& p) const
 	{
 		return n != p.n;
+	}
+	Pixel Pixel::operator+(const Pixel& p) const
+	{
+		uint16_t bufferR;
+		uint16_t bufferG;
+		uint16_t bufferB;
+		bufferR = (int)(r + p.r);
+		bufferG = (int)(g + p.g);
+		bufferB = (int)(b + p.b);
+		if (bufferR >= 255)bufferR = 255;
+		if (bufferG >= 255)bufferG = 255;
+		if (bufferB >= 255)bufferB = 255;
+		if (bufferR <= 0)bufferR = 0;
+		if (bufferG <= 0)bufferG = 0;
+		if (bufferB <= 0)bufferB = 0;
+		return Pixel(bufferR, bufferG, bufferB);
+	}
+	Pixel Pixel::operator*(const float f) const
+	{
+		uint16_t bufferR;
+		uint16_t bufferG;
+		uint16_t bufferB;
+		bufferR = (int)(r * f);
+		bufferG = (int)(g * f);
+		bufferB = (int)(b * f);
+		if (bufferR >= 255)bufferR = 255;
+		if (bufferG >= 255)bufferG = 255;
+		if (bufferB >= 255)bufferB = 255;
+		if (bufferR <= 0)bufferR = 0;
+		if (bufferG <= 0)bufferG = 0;
+		if (bufferB <= 0)bufferB = 0;
+		return Pixel(bufferR, bufferG, bufferB);
 	}
 
 	//==========================================================
